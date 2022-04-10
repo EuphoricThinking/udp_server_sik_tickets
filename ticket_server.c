@@ -4,6 +4,7 @@
 #include <stdbool.h>
 #include <stdlib.h>
 #include <getopt.h>
+#include <sys/stat.h>
 
 #define OPTSTRING "f:p:t:"
 #define PORT_MIN 0
@@ -24,7 +25,7 @@
 
 bool is_number(char* arg_opt) {
 	int index = arg_opt[0] == '-' ? 1 : 0;
-    
+
 	while (arg_opt[index] != '\0') {
 		if (!isdigit(arg_opt[index])) {
 
@@ -106,6 +107,14 @@ char* read_options(int argc, char* argv[], int* port_number, int* timeout) {
 	return filename;
 }
 
+void check_if_file_exists(char* path) {
+    struct stat buffer;
+    if (!stat(path, &buffer)) {
+        perror("Error with opening the file");
+
+        exit(1);
+    }
+}
 
 int main(int argc, char* argv[]) {
 	if (argc == 1) {
@@ -119,5 +128,7 @@ int main(int argc, char* argv[]) {
 
 	char* filename = read_options(argc, argv, &port, &timeout);
 	printf("FILENAME %s\n", filename);
+    check_if_file_exists(filename);
+
 	return 0;
 }
