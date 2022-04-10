@@ -5,7 +5,7 @@
 #include <stdlib.h>
 #include <getopt.h>
 
-#define OPTSTRING "f:pt"
+#define OPTSTRING "f:p:t:"
 #define PORT_MIN 0
 #define PORT_MAX 65535
 #define TIME_MIN 1
@@ -16,13 +16,15 @@
 
 #define TIME_ARG "timeout"
 #define PORT_ARG "port number"
+#define FILE_ARG "filename"
 
 #define TIME_OPT 't'
 #define PORT_OPT 'p'
 #define FILE_OPT 'f'
 
 bool is_number(char* arg_opt) {
-	int index = 0;
+	int index = arg_opt[0] == '-' ? 1 : 0;
+    
 	while (arg_opt[index] != '\0') {
 		if (!isdigit(arg_opt[index])) {
 
@@ -34,14 +36,18 @@ bool is_number(char* arg_opt) {
 	return true;
 }
 
+void test_whether_arg_is_passed(char* arg_opt, char* output) {
+    if (!arg_opt) {
+        printf("No argument passed to %s\n", output);
+
+        exit(1);
+    }
+}
+
 void test_optional_initial_correct(char* arg_opt, char mode) {
 	char* output = mode == TIME_OPT ? TIME_ARG : PORT_ARG;
 
-	if (!arg_opt) {
-		printf("No argument passed to %s\n", output);
-
-		exit(1);
-	}
+    test_whether_arg_is_passed(arg_opt, output);
 
 	if (!is_number(arg_opt)) {
 		printf("%s should be passed as a numeric code\n", output);
@@ -69,6 +75,7 @@ char* read_options(int argc, char* argv[], int* port_number, int* timeout) {
 		printf("READ: %c\n", option);
 		switch (option) {
 		case FILE_OPT:
+            test_whether_arg_is_passed(optarg, FILE_ARG);
 			filename = optarg;
 
 			break;
