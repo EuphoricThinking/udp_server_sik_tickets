@@ -145,11 +145,13 @@ void print_single_event(Event e) {
            e.description, e.text_length, e.description_octets, e.available_tickets);
 }
 
-void print_events(Event* e, int lengt) {
-
+void print_events(Event_array e) {
+    for (int i = 0; i < e.len; i++) {
+        print_single_event(e.arr[i]);
+    }
 }
 
-Event* read_process_save_file_content(char* path) {
+Event_array read_process_save_file_content(char* path) {
 //    struct stat buffer;
 //    if (!stat(path, &buffer)) {
 //        perror("Error with opening the file");
@@ -166,7 +168,8 @@ Event* read_process_save_file_content(char* path) {
     char read_ticket_num[TICK_LEN + 1];
 
     size_t max_index = 1;
-    Event* read_events = malloc(sizeof(Event)*max_index);
+    Event_array read_events;
+    read_events.arr = malloc(sizeof(Event)*max_index);
     Event* temp = NULL;
 
     size_t index = 0;
@@ -175,21 +178,23 @@ Event* read_process_save_file_content(char* path) {
 
         Event single_event = create_event(read_descr, atoi(read_ticket_num),
                                           strlen(read_descr));
-        read_events[index++] = single_event;
+        read_events.arr[index++] = single_event;
 
         if (index >= max_index) {
             max_index *= 2;
-            temp = realloc(read_events, max_index);
+            temp = realloc(read_events.arr, max_index);
             if (!temp) {
                 printf("Internal allocation memory error\n");
 
                 exit(1);
             }
             else {
-                read_events = temp;
+                read_events.arr = temp;
             }
         }
     }
+
+    read_events.len = index;
 
     return read_events;
 }
@@ -206,7 +211,8 @@ int main(int argc, char* argv[]) {
 
 	char* filename = read_options(argc, argv, &port, &timeout);
 	printf("FILENAME %s\n", filename);
-    read_process_save_file_content(filename);
+    Event_array read_events = read_process_save_file_content(filename);
+    print_events(read_events);
 
 	return 0;
 }
