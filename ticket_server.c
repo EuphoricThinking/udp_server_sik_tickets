@@ -5,6 +5,8 @@
 #include <stdlib.h>
 #include <getopt.h>
 #include <sys/stat.h>
+#include <stdint.h>
+#include <string.h>
 
 #define OPTSTRING "f:p:t:"
 #define PORT_MIN 0
@@ -24,6 +26,21 @@
 #define FILE_OPT 'f'
 
 #define ROUNDUP_8(x)    (((x) + 7) >> 3)
+
+#define DESC_LEN 80
+#define TICK_LEN 5
+
+typedef struct Event {
+    char* description;
+    uint8_t text_length;
+    uint8_t description_octets;
+    uint16_t available_tickets;
+} Event;
+
+typedef struct Event_array {
+    Event* arr;
+    size_t len;
+} Event_array;
 
 bool is_number(char* arg_opt) {
 	int index = arg_opt[0] == '-' ? 1 : 0;
@@ -108,8 +125,31 @@ char* read_options(int argc, char* argv[], int* port_number, int* timeout) {
 
 	return filename;
 }
+Event create_event(char* description, int num_tickets, int read_length) {
+    Event single_event;
 
-void read_process_save_file_content(char* path) {
+    single_event.description = description;
+    single_event.text_length = read_length;
+
+    single_event.available_tickets = 0;
+    single_event.available_tickets |= num_tickets;
+
+    single_event.description_octets = 0;
+    single_event.description_octets |= ROUNDUP_8(read_length);
+
+    return single_event;
+}
+
+void print_single_event(Event e) {
+    printf("desc:\n%s\ntext_length: %d\noctets: %d\ntickets: %d\n\n",
+           e.description, e.text_length, e.description_octets, e.available_tickets);
+}
+
+void print_events(Event* e, int lengt) {
+
+}
+
+Event* read_process_save_file_content(char* path) {
 //    struct stat buffer;
 //    if (!stat(path, &buffer)) {
 //        perror("Error with opening the file");
@@ -121,6 +161,37 @@ void read_process_save_file_content(char* path) {
     if (!opened) {
         perror(path);
     }
+
+    char read_descr[DESC_LEN + 1];
+    char read_ticket_num[TICK_LEN + 1];
+
+    size_t max_index = 1;
+    Event* read_events = malloc(sizeof(Event)*max_index);
+    Event* temp = NULL;
+
+    size_t index = 0;
+    while(fgets(read_descr, DESC_LEN + 1, opened)) {
+        fgets(read_ticket_num, TICK_LEN + 1, opened);
+
+        Event single_event = create_event(read_descr, atoi(read_ticket_num),
+                                          strlen(read_descr));
+        read_events[index++] = single_event;
+
+        if (index >= max_index) {
+            max_index *= 2;
+            temp = realloc(read_events, max_index);
+            if (!temp) {
+                printf("Internal allocation memory error\n");
+
+                exit(1);
+            }
+            else {
+                read_events = temp;
+            }
+        }
+    }
+
+    return read_events;
 }
 
 int main(int argc, char* argv[]) {
