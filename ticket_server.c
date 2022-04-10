@@ -34,8 +34,8 @@ bool is_number(char* arg_opt) {
 	return true;
 }
 
-void test_optional(char* arg_opt, char mode) {
-	char[] output = mode == TIME_OPT ? TIME_ARG : PORT_ARG;
+void test_optional_initial_correct(char* arg_opt, char mode) {
+	char* output = mode == TIME_OPT ? TIME_ARG : PORT_ARG;
 
 	if (!arg_opt) {
 		printf("No argument passed to %s\n", output);
@@ -46,8 +46,19 @@ void test_optional(char* arg_opt, char mode) {
 	if (!is_number(arg_opt)) {
 		printf("%s should be passed as a numeric code\n", output);
                 exit(1);
-                }
 	}
+}
+
+void test_optional_range(int* value, char mode) {
+    char *output = mode == TIME_OPT ? TIME_ARG : PORT_ARG;
+    int max_range = mode == TIME_OPT ? TIME_MAX : PORT_MAX;
+    int min_range = mode == TIME_OPT ? TIME_MIN : PORT_MIN;
+
+    if (*value < min_range || *value > max_range) {
+        printf("%s should be included in "
+               "range [%d, %d]\n", output, max_range, min_range);
+        exit(1);
+    }
 }
 
 char* read_options(int argc, char* argv[], int* port_number, int* timeout) {
@@ -62,12 +73,7 @@ char* read_options(int argc, char* argv[], int* port_number, int* timeout) {
 
 			break;
 		case PORT_OPT:
-			printf("|%s|\n", optarg);
-			if (!is_number(optarg)) {
-				printf("Port number should be passed as a"
-					" numeric code\n");
-                                exit(1);
-                        }
+            test_optional_initial_correct(optarg, PORT_OPT);
 
 			*port_number = atoi(optarg);
 			if (*port_number < PORT_MIN || *port_number > PORT_MAX) {
