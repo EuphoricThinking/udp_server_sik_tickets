@@ -2,6 +2,8 @@
 #include <unistd.h>
 #include <ctype.h>
 #include <stdbool.h>
+#include <stdlib.h>
+#include <getopt.h>
 
 #define OPTSTRING ":fpt"
 #define PORT_MIN 0
@@ -24,9 +26,9 @@ bool is_number(char* arg_opt) {
 	return true;
 }
 
-char* read_options(int argc, char* argv, int* port_number, int* timeout) {
+char* read_options(int argc, char* argv[], int* port_number, int* timeout) {
 	int option;
-	char* filename;
+	char* filename = NULL;
 
 	while ((option = getopt(argc, argv, OPTSTRING)) != -1) {
 		switch (option) {
@@ -35,12 +37,12 @@ char* read_options(int argc, char* argv, int* port_number, int* timeout) {
 		case 'p':
 			if (!is_number(optarg)) {
 				printf("Port number should be passed as a"
-					" numeric code\n">
+					" numeric code\n");
                                 exit(1);
                         }
 
 			*port_number = atoi(optarg);
-			if (port_number < PORT_MIN || port_number > PORT_MAX) {
+			if (*port_number < PORT_MIN || *port_number > PORT_MAX) {
 				printf("Port number should be included in "
 					"range [%d, %d]\n", PORT_MIN, PORT_MAX);
 				exit(1);
@@ -54,11 +56,12 @@ char* read_options(int argc, char* argv, int* port_number, int* timeout) {
 			}
 
 			*timeout = atoi(optarg);
-			if (timeout < TIME_MIN || timeout > TIME_MAX) {
+			if (*timeout < TIME_MIN || *timeout > TIME_MAX) {
 				printf("Timeout should be a number specified"
 					" in range [%d, %d]\n", TIME_MIN,
 					TIME_MAX);
 				exit(1);
+			}
 
 		default: /* ? */
 			printf("Unrecognized argument\n");
@@ -70,7 +73,7 @@ char* read_options(int argc, char* argv, int* port_number, int* timeout) {
 }
 
 
-int main(int argc, char* argv) {
+int main(int argc, char* argv[]) {
 	int timeout = TIME_DEF;
 	int port = PORT_DEF;
 
