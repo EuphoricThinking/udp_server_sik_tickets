@@ -14,6 +14,13 @@
 #define PORT_DEF 2022
 #define TIME_DEF 5
 
+#define TIME_ARG "timeout"
+#define PORT_ARG "port number"
+
+#define TIME_OPT 't'
+#define PORT_OPT 'p'
+#define FILE_OPT 'f'
+
 bool is_number(char* arg_opt) {
 	int index = 0;
 	while (arg_opt[index] != '\0') {
@@ -27,6 +34,22 @@ bool is_number(char* arg_opt) {
 	return true;
 }
 
+void test_optional(char* arg_opt, char mode) {
+	char[] output = mode == TIME_OPT ? TIME_ARG : PORT_ARG;
+
+	if (!arg_opt) {
+		printf("No argument passed to %s\n", output);
+
+		exit(1);
+	}
+
+	if (!is_number(arg_opt)) {
+		printf("%s should be passed as a numeric code\n", output);
+                exit(1);
+                }
+	}
+}
+
 char* read_options(int argc, char* argv[], int* port_number, int* timeout) {
 	int option;
 	char* filename = NULL;
@@ -34,12 +57,12 @@ char* read_options(int argc, char* argv[], int* port_number, int* timeout) {
 	while ((option = getopt(argc, argv, OPTSTRING)) != -1) {
 		printf("READ: %c\n", option);
 		switch (option) {
-		case 'f':
-			printf("OPTION: %c\n", option);
+		case FILE_OPT:
 			filename = optarg;
 
 			break;
-		case 'p':
+		case PORT_OPT:
+			printf("|%s|\n", optarg);
 			if (!is_number(optarg)) {
 				printf("Port number should be passed as a"
 					" numeric code\n");
@@ -55,7 +78,7 @@ char* read_options(int argc, char* argv[], int* port_number, int* timeout) {
 
 			break;
 
-		case 't':
+		case TIME_OPT:
 			if (!is_number(optarg)) {
 				printf("Timeout should be passed as a "
 					"numeric code\n");
@@ -73,7 +96,8 @@ char* read_options(int argc, char* argv[], int* port_number, int* timeout) {
 			break;
 
 		default: /* ? */
-			printf("Unrecognized argument\n");
+			printf("Unrecognized argument or no parameter passed"
+				"\nUsage: ./test_service -f filename\n");
 			exit(1);
 		}
 	}
@@ -92,6 +116,6 @@ int main(int argc, char* argv[]) {
 	int port = PORT_DEF;
 
 	char* filename = read_options(argc, argv, &port, &timeout);
-	printf("COŚ\n");
+	printf("FILENAME %s\n", filename);
 	return 0;
 }
