@@ -23,6 +23,8 @@
 #define PORT_OPT 'p'
 #define FILE_OPT 'f'
 
+#define ROUNDUP_8(x)    (((x) + 7) >> 3)
+
 bool is_number(char* arg_opt) {
 	int index = arg_opt[0] == '-' ? 1 : 0;
 
@@ -107,13 +109,14 @@ char* read_options(int argc, char* argv[], int* port_number, int* timeout) {
 	return filename;
 }
 
-void check_if_file_exists(char* path) {
+void read_process_save_file_content(char* path) {
 //    struct stat buffer;
 //    if (!stat(path, &buffer)) {
 //        perror("Error with opening the file");
 //
 //        exit(1);
 //    }
+    printf("ROUNDUP %d\n", ROUNDUP_8(65));
     FILE* opened = fopen(path, "r");
     if (!opened) {
         perror(path);
@@ -132,7 +135,7 @@ int main(int argc, char* argv[]) {
 
 	char* filename = read_options(argc, argv, &port, &timeout);
 	printf("FILENAME %s\n", filename);
-    check_if_file_exists(filename);
+    read_process_save_file_content(filename);
 
 	return 0;
 }
