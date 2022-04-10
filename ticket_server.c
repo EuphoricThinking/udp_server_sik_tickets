@@ -5,7 +5,7 @@
 #include <stdlib.h>
 #include <getopt.h>
 
-#define OPTSTRING ":fpt"
+#define OPTSTRING "f:pt"
 #define PORT_MIN 0
 #define PORT_MAX 65535
 #define TIME_MIN 1
@@ -21,6 +21,7 @@ bool is_number(char* arg_opt) {
 
 			return false;
 		}
+		index++;
 	}
 
 	return true;
@@ -31,9 +32,13 @@ char* read_options(int argc, char* argv[], int* port_number, int* timeout) {
 	char* filename = NULL;
 
 	while ((option = getopt(argc, argv, OPTSTRING)) != -1) {
+		printf("READ: %c\n", option);
 		switch (option) {
 		case 'f':
+			printf("OPTION: %c\n", option);
 			filename = optarg;
+
+			break;
 		case 'p':
 			if (!is_number(optarg)) {
 				printf("Port number should be passed as a"
@@ -47,6 +52,8 @@ char* read_options(int argc, char* argv[], int* port_number, int* timeout) {
 					"range [%d, %d]\n", PORT_MIN, PORT_MAX);
 				exit(1);
 			}
+
+			break;
 
 		case 't':
 			if (!is_number(optarg)) {
@@ -63,6 +70,8 @@ char* read_options(int argc, char* argv[], int* port_number, int* timeout) {
 				exit(1);
 			}
 
+			break;
+
 		default: /* ? */
 			printf("Unrecognized argument\n");
 			exit(1);
@@ -74,10 +83,15 @@ char* read_options(int argc, char* argv[], int* port_number, int* timeout) {
 
 
 int main(int argc, char* argv[]) {
+	if (argc == 1) {
+		printf("Required arguments: -f filename\n");
+		exit(1);
+	}
+
 	int timeout = TIME_DEF;
 	int port = PORT_DEF;
 
 	char* filename = read_options(argc, argv, &port, &timeout);
-
+	printf("COŚ\n");
 	return 0;
 }
