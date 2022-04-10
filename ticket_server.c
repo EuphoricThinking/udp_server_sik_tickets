@@ -76,34 +76,22 @@ char* read_options(int argc, char* argv[], int* port_number, int* timeout) {
             test_optional_initial_correct(optarg, PORT_OPT);
 
 			*port_number = atoi(optarg);
-			if (*port_number < PORT_MIN || *port_number > PORT_MAX) {
-				printf("Port number should be included in "
-					"range [%d, %d]\n", PORT_MIN, PORT_MAX);
-				exit(1);
-			}
+            test_optional_range(port_number, PORT_OPT);
 
 			break;
 
 		case TIME_OPT:
-			if (!is_number(optarg)) {
-				printf("Timeout should be passed as a "
-					"numeric code\n");
-				exit(1);
-			}
+            test_optional_initial_correct(optarg, TIME_OPT);
 
 			*timeout = atoi(optarg);
-			if (*timeout < TIME_MIN || *timeout > TIME_MAX) {
-				printf("Timeout should be a number specified"
-					" in range [%d, %d]\n", TIME_MIN,
-					TIME_MAX);
-				exit(1);
-			}
+            test_optional_range(timeout, TIME_OPT);
 
 			break;
 
 		default: /* ? */
 			printf("Unrecognized argument or no parameter passed"
-				"\nUsage: ./test_service -f filename\n");
+				"\nUsage: ./test_service -f filename\n"
+                "Optional: -p port_number -t timeout\n");
 			exit(1);
 		}
 	}
@@ -114,7 +102,8 @@ char* read_options(int argc, char* argv[], int* port_number, int* timeout) {
 
 int main(int argc, char* argv[]) {
 	if (argc == 1) {
-		printf("Required arguments: -f filename\n");
+		printf("Required arguments: -f filename\n"
+               "Optional: -p port_number -t timeout\n");
 		exit(1);
 	}
 
