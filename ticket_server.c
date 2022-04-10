@@ -108,11 +108,15 @@ char* read_options(int argc, char* argv[], int* port_number, int* timeout) {
 }
 
 void check_if_file_exists(char* path) {
-    struct stat buffer;
-    if (!stat(path, &buffer)) {
-        perror("Error with opening the file");
-
-        exit(1);
+//    struct stat buffer;
+//    if (!stat(path, &buffer)) {
+//        perror("Error with opening the file");
+//
+//        exit(1);
+//    }
+    FILE* opened = fopen(path, "r");
+    if (!opened) {
+        perror(path);
     }
 }
 
