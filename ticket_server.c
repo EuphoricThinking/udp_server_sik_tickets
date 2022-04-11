@@ -244,11 +244,7 @@ int bind_socket(uint16_t port) {
     int socket_fd = socket(AF_INET, SOCK_DGRAM, 0); // creating IPv4 UDP socket
 //    ENSURE(socket_fd > 0);
     // after socket() call; we should close(sock) on any execution path;
-    if (socket_fd < 0) {
-        perror("Determining socket file descriptor");
-
-        exit(1);
-    }
+    check_err(socket_fd, 0, "Determining socket file descriptor");
 
     struct sockaddr_in server_address;
     server_address.sin_family = AF_INET; // IPv4
@@ -258,7 +254,7 @@ int bind_socket(uint16_t port) {
     // bind the socket to a concrete address
     int err = bind(socket_fd, (struct sockaddr *) &server_address,
                      (socklen_t) sizeof(server_address));
-    if (err < 0) {}
+    check_err(err, 0, "Socket bindng");
 
     return socket_fd;
 }
