@@ -35,6 +35,8 @@
 #define DESC_LEN 80
 #define TICK_LEN 5
 
+#define UDP_MAX  65507
+
 typedef struct Event {
     char* description;
 //    uint8_t text_length;
@@ -259,6 +261,21 @@ int bind_socket(uint16_t port) {
     return socket_fd;
 }
 
+size_t read_message(int socket_fd, struct sockaddr_in *client_address,
+                    char *buffer, size_t max_length) {
+    socklen_t address_length = (socklen_t) sizeof(*client_address);
+    int flags = 0; // we do not request anything special
+//    errno = 0;
+    ssize_t len = recvfrom(socket_fd, buffer, max_length, flags,
+                           (struct sockaddr *) client_address, &address_length);
+//    if (len < 0) {
+//        PRINT_ERRNO();
+//    }
+    check_err(len, 0, "Receiving a message from a client");
+
+    return (size_t) len;
+}
+
 int main(int argc, char* argv[]) {
 	if (argc == 1) {
 		printf("Required arguments: -f filename\n"
@@ -273,6 +290,9 @@ int main(int argc, char* argv[]) {
 	printf("FILENAME %s\n", filename);
     Event_array read_events = read_process_save_file_content(filename);
     print_events(read_events);
+
+    char message_buffer[UDP_MAX + 1];
+
     delete_event_array(read_events.arr, read_events.len);
 
 	return 0;
