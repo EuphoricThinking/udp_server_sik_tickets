@@ -32,7 +32,7 @@
 
 typedef struct Event {
     char* description;
-    uint8_t text_length;
+//    uint8_t text_length;
     uint8_t description_octets;
     uint16_t available_tickets;
 } Event;
@@ -131,25 +131,26 @@ Event create_event(char* description, int num_tickets, int read_length) {
     single_event.description = malloc(read_length + 1);
     single_event.description = strcpy(single_event.description, description);
 
-    single_event.text_length = read_length;
+//    single_event.text_length = read_length;
 
     single_event.available_tickets = 0;
     single_event.available_tickets |= num_tickets;
 
 //    single_event.description_octets = 0;
 //    single_event.description_octets |= ROUNDUP_8(read_length);
-    if ((read_length >> 8) == 0) {
-        single_event.description_octets = 1;
-    } else {
-        single_event.description_octets = 2;
-    }
+//    if ((read_length >> 8) == 0) {
+//        single_event.description_octets = 1;
+//    } else {
+//        single_event.description_octets = 2;
+//    }
+    single_event.description_octets = read_length;
 
     return single_event;
 }
 
 void print_single_event(Event e) {
-    printf("desc:\n%s\ntext_length: %d\noctets: %d\ntickets: %d\n\n",
-           e.description, e.text_length, e.description_octets, e.available_tickets);
+    printf("desc:\n%s\noctets: %d\ntickets: %d\n\n",
+           e.description, e.description_octets, e.available_tickets);
 }
 
 void print_events(Event_array e) {
