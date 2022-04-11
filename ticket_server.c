@@ -128,7 +128,9 @@ char* read_options(int argc, char* argv[], int* port_number, int* timeout) {
 Event create_event(char* description, int num_tickets, int read_length) {
     Event single_event;
 
-    single_event.description = description;
+    single_event.description = malloc(read_length + 1);
+    single_event.description = strcpy(single_event.description, description);
+
     single_event.text_length = read_length;
 
     single_event.available_tickets = 0;
@@ -151,6 +153,15 @@ void print_events(Event_array e) {
     }
 }
 
+void delete_event_array(Event* arr, size_t len) {
+    for (size_t i = 0; i < len; i++) {
+        free(arr[i].description);
+//        arr[i].description = NULL;
+    }
+
+    free(arr);
+}
+
 Event_array read_process_save_file_content(char* path) {
 //    struct stat buffer;
 //    if (!stat(path, &buffer)) {
@@ -164,8 +175,8 @@ Event_array read_process_save_file_content(char* path) {
         perror(path);
     }
 
-    char read_descr[DESC_LEN + 1];
-    char read_ticket_num[TICK_LEN + 1];
+    char read_descr[DESC_LEN + 2];
+    char read_ticket_num[TICK_LEN + 2];
 
     size_t max_index = 1;
     Event_array read_events;
@@ -183,7 +194,8 @@ Event_array read_process_save_file_content(char* path) {
         }
 
         size_t length = strlen(read_descr);
-        length = read_descr[length - 1] == '\n' ? length - 1 : length;
+        if (read_descr[length - 1] == '\n') read_descr[length - 1] = '\0';
+
         Event single_event = create_event(read_descr, atoi(read_ticket_num),
                                           length);
         read_events.arr[index++] = single_event;
@@ -193,6 +205,7 @@ Event_array read_process_save_file_content(char* path) {
             temp = realloc(read_events.arr, max_index* sizeof(Event));
             if (!temp) {
                 printf("Internal allocation memory error\n");
+                delete_event_array(read_events.arr, index);
 
                 exit(1);
             }
@@ -203,6 +216,7 @@ Event_array read_process_save_file_content(char* path) {
     }
 
     read_events.len = index;
+    fclose(opened);
 
     return read_events;
 }
@@ -221,6 +235,7 @@ int main(int argc, char* argv[]) {
 	printf("FILENAME %s\n", filename);
     Event_array read_events = read_process_save_file_content(filename);
     print_events(read_events);
+    delete_event_array(read_events.arr, read_events.len);
 
 	return 0;
 }
