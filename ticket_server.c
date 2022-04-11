@@ -146,7 +146,7 @@ void print_single_event(Event e) {
 }
 
 void print_events(Event_array e) {
-    for (int i = 0; i < e.len; i++) {
+    for (size_t i = 0; i < e.len; i++) {
         print_single_event(e.arr[i]);
     }
 }
@@ -173,11 +173,19 @@ Event_array read_process_save_file_content(char* path) {
     Event* temp = NULL;
 
     size_t index = 0;
+    char* ret;
     while(fgets(read_descr, DESC_LEN + 1, opened)) {
-        fgets(read_ticket_num, TICK_LEN + 1, opened);
+        ret = fgets(read_ticket_num, TICK_LEN + 1, opened);
+        if (!ret) {
+            printf("Error while reading file\n");
 
+            exit(1);
+        }
+
+        size_t length = strlen(read_descr);
+        length = read_descr[length - 1] == '\n' ? length - 1 : length;
         Event single_event = create_event(read_descr, atoi(read_ticket_num),
-                                          strlen(read_descr));
+                                          length);
         read_events.arr[index++] = single_event;
 
         if (index >= max_index) {
