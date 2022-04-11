@@ -25,7 +25,7 @@
 #define PORT_OPT 'p'
 #define FILE_OPT 'f'
 
-#define ROUNDUP_8(x)    (((x) + 7) >> 3)
+#define ROUNDUP_8(x)    (((x) + 7) >> 8)
 
 #define DESC_LEN 80
 #define TICK_LEN 5
