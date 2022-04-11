@@ -37,6 +37,15 @@
 
 #define UDP_MAX  65507
 
+#define GET_EVENTS      1
+#define GET_RESERVATION 3
+#define GET_TICKETS     5
+
+#define EVENTS          2
+#define RESERVATION     4
+#define TICKETS         6
+#define BAD_REQUEST     255
+
 typedef struct Event {
     char* description;
 //    uint8_t text_length;
