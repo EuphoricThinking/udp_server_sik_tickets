@@ -194,7 +194,7 @@ Event_array read_process_save_file_content(char* path) {
         }
 
         size_t length = strlen(read_descr);
-        if (read_descr[length - 1] == '\n') read_descr[length - 1] = '\0';
+        if (read_descr[length - 1] == '\n') read_descr[--length] = '\0';
 
         Event single_event = create_event(read_descr, atoi(read_ticket_num),
                                           length);
