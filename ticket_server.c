@@ -190,7 +190,7 @@ Event_array read_process_save_file_content(char* path) {
 
         if (index >= max_index) {
             max_index *= 2;
-            temp = realloc(read_events.arr, max_index);
+            temp = realloc(read_events.arr, max_index* sizeof(Event));
             if (!temp) {
                 printf("Internal allocation memory error\n");
 
