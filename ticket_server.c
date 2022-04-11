@@ -7,6 +7,11 @@
 #include <sys/stat.h>
 #include <stdint.h>
 #include <string.h>
+#include <arpa/inet.h>
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
+
 
 #define OPTSTRING "f:p:t:"
 #define PORT_MIN 0
@@ -225,6 +230,37 @@ Event_array read_process_save_file_content(char* path) {
     fclose(opened);
 
     return read_events;
+}
+
+void check_err(int res, int control_should_be_leq, const char* mess) {
+    if (res < control_should_be_leq) {
+        perror(mess);
+
+        exit(1);
+    }
+}
+
+int bind_socket(uint16_t port) {
+    int socket_fd = socket(AF_INET, SOCK_DGRAM, 0); // creating IPv4 UDP socket
+//    ENSURE(socket_fd > 0);
+    // after socket() call; we should close(sock) on any execution path;
+    if (socket_fd < 0) {
+        perror("Determining socket file descriptor");
+
+        exit(1);
+    }
+
+    struct sockaddr_in server_address;
+    server_address.sin_family = AF_INET; // IPv4
+    server_address.sin_addr.s_addr = htonl(INADDR_ANY); // listening on all interfaces
+    server_address.sin_port = htons(port);
+
+    // bind the socket to a concrete address
+    int err = bind(socket_fd, (struct sockaddr *) &server_address,
+                     (socklen_t) sizeof(server_address));
+    if (err < 0) {}
+
+    return socket_fd;
 }
 
 int main(int argc, char* argv[]) {
