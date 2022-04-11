@@ -46,6 +46,21 @@
 #define TICKETS         6
 #define BAD_REQUEST     255
 
+#define MESS_ID_OCT     1
+#define DESC_LEN_OCT    1
+#define TICK_COU_OCT    2
+#define EVENT_ID_OCT    4
+#define RES_ID_OCT      4
+#define COOKIE_OCT      48
+#define EXP_TIME_OCT    8
+#define TICKET_OCT      7
+
+#define EVENT_ID_MIN    0
+#define EVENT_ID_MAX    999999
+#define RES_ID_MIN      999999
+#define COOKIE_ASCII_MIN    33
+#define COOKIE_ASCII_MAX    126
+
 typedef struct Event {
     char* description;
 //    uint8_t text_length;
