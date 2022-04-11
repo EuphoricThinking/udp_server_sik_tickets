@@ -290,8 +290,29 @@ int main(int argc, char* argv[]) {
 	printf("FILENAME %s\n", filename);
     Event_array read_events = read_process_save_file_content(filename);
     print_events(read_events);
+    printf("Listening on port %d\n", port);
 
     char message_buffer[UDP_MAX + 1];
+    memset(message_buffer, 0, sizeof(message_buffer));
+
+    size_t read_length;
+
+    uint16_t port_converted = 0;
+    port_converted |= port;
+
+    int socket_fd = bind_socket(port_converted);
+    struct sockaddr_in client_address;
+
+    do {
+        read_length = read_message(socket_fd, &client_address,
+                                   message_buffer, sizeof(message_buffer));
+        char* client_ip = inet_ntoa(client_address.sin_addr);
+        uint16_t client_port = ntohs(client_address.sin_port);
+        printf("received %zd bytes from client %s:%u: '%.*s'\n",
+               read_length, client_ip, client_port,
+               (int) read_length, message_buffer); // note: we specify the length of the printed string
+
+    } while (read_length > 0);
 
     delete_event_array(read_events.arr, read_events.len);
 
