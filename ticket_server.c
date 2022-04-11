@@ -25,7 +25,7 @@
 #define PORT_OPT 'p'
 #define FILE_OPT 'f'
 
-#define ROUNDUP_8(x)    (((x) + 7) >> 8)
+#define ROUNDUP_8(x)    (((x) + 255) >> 8)
 
 #define DESC_LEN 80
 #define TICK_LEN 5
@@ -136,8 +136,13 @@ Event create_event(char* description, int num_tickets, int read_length) {
     single_event.available_tickets = 0;
     single_event.available_tickets |= num_tickets;
 
-    single_event.description_octets = 0;
-    single_event.description_octets |= ROUNDUP_8(read_length);
+//    single_event.description_octets = 0;
+//    single_event.description_octets |= ROUNDUP_8(read_length);
+    if ((read_length >> 8) == 0) {
+        single_event.description_octets = 1;
+    } else {
+        single_event.description_octets = 2;
+    }
 
     return single_event;
 }
@@ -169,7 +174,7 @@ Event_array read_process_save_file_content(char* path) {
 //
 //        exit(1);
 //    }
-    printf("ROUNDUP %d\n", ROUNDUP_8(65));
+    printf("ROUNDUP %d\n", ROUNDUP_8(65535));
     FILE* opened = fopen(path, "r");
     if (!opened) {
         perror(path);
@@ -197,7 +202,7 @@ Event_array read_process_save_file_content(char* path) {
         if (read_descr[length - 1] == '\n') read_descr[--length] = '\0';
 
         Event single_event = create_event(read_descr, atoi(read_ticket_num),
-                                          length);
+                                          length); //TODO length
         read_events.arr[index++] = single_event;
 
         if (index >= max_index) {
