@@ -317,7 +317,7 @@ Client_message create_client_message(uint8_t message_id, uint32_t event_id,
     filled.event_id = event_id;
     filled.ticket_count = ticket_count;
     filled.reservation_id = reservation_id;
-    filled.cookie;
+    filled.cookie = cookie;
 
     return filled;
 }
@@ -350,16 +350,16 @@ uint32_t bitshift_to_retrieve_message(int begining, int end, char* message) {
             }
  */
 
-Client_message interpret_client_message(char* message, int received_length,
+Client_message interpret_client_message(char* message, size_t received_length,
                                         Event_array events) { //TODO check if reservation has been made
     Client_message result_message = create_client_message(ERR_MESS_ID, 0, 0, 0, "");
     if (received_length == 0) return result_message;
 
-    uint32_t message_id_ntohl = ntohl(message[0]);
-
+    uint32_t message_id_ntohl = message[0];
+//    printf("ntohl: %d\n", message_id_ntohl);
     if (message_id_ntohl != GET_EVENTS && message_id_ntohl != GET_RESERVATION
         && message_id_ntohl != GET_TICKETS) return result_message;
-
+    printf("nopassed\n");
     switch (message_id_ntohl) {
         case GET_EVENTS:
             if (received_length > 1) return result_message;
@@ -369,21 +369,23 @@ Client_message interpret_client_message(char* message, int received_length,
             return result_message;
 
         case GET_RESERVATION:
+            printf("received length: %ld\n", received_length);
             if (received_length != (MESS_ID_OCT + EVENT_ID_OCT + TICK_COU_OCT))
                 return result_message;
 
-            uint32_t event_id = bitshift_to_retrieve_message(1,
+            uint32_t event_id = ntohl(bitshift_to_retrieve_message(1,
                                                              EVENT_ID_OCT + 1,
-                                                             message);
+                                                             message));
             result_message.event_id = event_id;
-
-            if (event_id > events.len) return result_message;
+            printf("len: %ld id: %d\n", events.len, event_id);
+            if (event_id > (events.len - 1)) return result_message;
 
             uint16_t tickets_count = 0;
             int ticket_begin = 1 + EVENT_ID_OCT;
-            tickets_count |= bitshift_to_retrieve_message(ticket_begin,
+            tickets_count = ntohl(tickets_count |= bitshift_to_retrieve_message(ticket_begin,
                                                     ticket_begin + TICK_COU_OCT,
-                                                    message);
+                                                    message));
+            printf("TICKETS %d\n", tickets_count);
             if (tickets_count == 0 || events.arr[event_id].available_tickets
                 < tickets_count || UDP_MAX < (TICKET_OCT*tickets_count +
                 MESS_ID_OCT + RES_ID_OCT + TICK_COU_OCT))
@@ -396,6 +398,8 @@ Client_message interpret_client_message(char* message, int received_length,
 
         //TODO get tickets
     }
+
+	return result_message;
 }
 
 int main(int argc, char* argv[]) {
@@ -424,6 +428,7 @@ int main(int argc, char* argv[]) {
 
     int socket_fd = bind_socket(port_converted);
     struct sockaddr_in client_address;
+    printf("BYTE ORDER%d\n'", __BYTE_ORDER == __LITTLE_ENDIAN);
 
     do {
         read_length = read_message(socket_fd, &client_address,
@@ -433,6 +438,11 @@ int main(int argc, char* argv[]) {
         printf("received %zd bytes from client %s:%u: '%.*s' |%d|\n",
                read_length, client_ip, client_port,
                (int) read_length, message_buffer, (int) message_buffer[0]); // note: we specify the length of the printed string
+
+        Client_message received_message = interpret_client_message(message_buffer,
+                                                                   read_length,
+                                                                   read_events);
+        print_client_message(received_message);
 
     } while (read_length > 0);
 
