@@ -264,8 +264,8 @@ Event_array read_process_save_file_content(char* path) {
     return read_events;
 }
 
-void check_err(int res, int control_should_be_leq, const char* mess) {
-    if (res < control_should_be_leq) {
+void check_err_perror(bool statement, const char* mess) {
+    if (!statement) {
         perror(mess);
 
         exit(1);
@@ -276,7 +276,7 @@ int bind_socket(uint16_t port) {
     int socket_fd = socket(AF_INET, SOCK_DGRAM, 0); // creating IPv4 UDP socket
 //    ENSURE(socket_fd > 0);
     // after socket() call; we should close(sock) on any execution path;
-    check_err(socket_fd, 0, "Determining socket file descriptor");
+    check_err_perror((socket_fd >= 0), "Determining socket file descriptor");
 
     struct sockaddr_in server_address;
     server_address.sin_family = AF_INET; // IPv4
@@ -286,7 +286,7 @@ int bind_socket(uint16_t port) {
     // bind the socket to a concrete address
     int err = bind(socket_fd, (struct sockaddr *) &server_address,
                      (socklen_t) sizeof(server_address));
-    check_err(err, 0, "Socket bindng");
+    check_err_perror((err == 0), "Socket bindng");
 
     return socket_fd;
 }
@@ -301,7 +301,7 @@ size_t read_message(int socket_fd, struct sockaddr_in *client_address,
 //    if (len < 0) {
 //        PRINT_ERRNO();
 //    }
-    check_err(len, 0, "Receiving a message from a client");
+    check_err_perror((len >= 0), "Receiving a message from a client");
 
     return (size_t) len;
 }
