@@ -517,51 +517,6 @@ void fill_buffer(int start, int end, char* buffer, uint32_t converted_htonl) {
     }
 }
 
-void handle_client_message(Client_message from_client, char* message,
-                           int socket_fd,
-                           const struct sockaddr_in *client_address) {
-    size_t length_to_send;
-
-    bool to_be_ignored = false;
-
-    printf("ID: %d ERR: %d \n", from_client.message_id, ERR_MESS_ID);
-    switch (from_client.message_id) {
-        case ERR_MESS_ID:
-            if (from_client.ticket_count == ERR_EVENTS_TICK) {
-                length_to_send = MESS_ID_OCT + EVENT_ID_OCT;
-                printf("EVENTS_TICK\n");
-
-                message[0] = BAD_REQUEST;
-
-                uint32_t event_id_to_send = htonl(from_client.event_id);
-                fill_buffer(1, 1 + EVENT_ID_OCT, message, event_id_to_send);
-
-                //send_message(socket_fd, client_address, message, length_to_send);
-            }
-            else if (from_client.ticket_count == ERR_RES) {
-                printf("RESE_ERR TICk %d ERR_res %d \n", from_client.ticket_count, ERR_RES);
-                length_to_send = MESS_ID_OCT + RES_ID_OCT;
-
-                message[0] = BAD_REQUEST;
-
-                uint32_t reservation_id_to_send = htonl(from_client.reservation_id);
-                fill_buffer(1, 1 + RES_ID_OCT, message, reservation_id_to_send);
-
-                //send_message(socket_fd, client_address, message, length_to_send);
-            }
-            else {
-                to_be_ignored = true;
-            }
-
-            break; //incorrect length etc. - simply skip
-
-
-    }
-
-    if (!to_be_ignored) send_message(socket_fd, client_address, message,
-                                     length_to_send);
-}
-
 void free_expired(Event_array* events, Queue* expiring, const Reservation_array *reservs) {
     time_t expiration;
     List* reservation;
@@ -580,6 +535,52 @@ void free_expired(Event_array* events, Queue* expiring, const Reservation_array 
             delete_node(reservation);
         }
     }
+}
+
+void handle_client_message(Client_message from_client, char* message,
+                           int socket_fd,
+                           const struct sockaddr_in *client_address) {
+    size_t length_to_send;
+
+    bool to_be_ignored = false;
+
+    printf("ID: %d ERR: %d \n", from_client.message_id, ERR_MESS_ID);
+    switch (from_client.message_id) {
+        case ERR_MESS_ID:
+            if (from_client.ticket_count == ERR_EVENTS_TICK) {
+                length_to_send = MESS_ID_OCT + EVENT_ID_OCT;
+                printf("EVENTS_TICK\n");
+
+                message[0] = BAD_REQUEST;
+
+                uint32_t event_id_to_send = htonl(from_client.event_id);
+//                fill_buffer(1, 1 + EVENT_ID_OCT, message, event_id_to_send);
+                *(uint32_t*)(message + 1) = event_id_to_send; //TODO does it work
+                //send_message(socket_fd, client_address, message, length_to_send);
+            }
+            else if (from_client.ticket_count == ERR_RES) {
+                printf("RESE_ERR TICk %d ERR_res %d \n", from_client.ticket_count, ERR_RES);
+                length_to_send = MESS_ID_OCT + RES_ID_OCT;
+
+                message[0] = BAD_REQUEST;
+
+                uint32_t reservation_id_to_send = htonl(from_client.reservation_id);
+//                fill_buffer(1, 1 + RES_ID_OCT, message, reservation_id_to_send);
+                *(uint32_t*)(message + 1) = reservation_id_to_send;
+
+                //send_message(socket_fd, client_address, message, length_to_send);
+            }
+            else {
+                to_be_ignored = true;
+            }
+
+            break; //incorrect length etc. - simply skip
+
+
+    }
+
+    if (!to_be_ignored) send_message(socket_fd, client_address, message,
+                                     length_to_send);
 }
 
 Client_message interpret_client_message(char* message, size_t received_length,
@@ -690,6 +691,7 @@ int main(int argc, char* argv[]) {
     struct sockaddr_in client_address;
 //    printf("BYTE ORDER%d\n'", __BYTE_ORDER == __LITTLE_ENDIAN);
     Queue* reservation_expiring = init_queue();
+    Reservation_array reservations;
 
     do {
         read_length = read_message(socket_fd, &client_address,
@@ -704,7 +706,8 @@ int main(int argc, char* argv[]) {
         Client_message received_message = interpret_client_message(message_buffer,
                                                                    read_length,
                                                                    &read_events,
-                                                                   reservation_expiring);
+                                                                   reservation_expiring,
+                                                                   &reservations);
         print_client_message(received_message, false);
         printf("\n");
 
