@@ -73,6 +73,12 @@ typedef struct Event_array {
     size_t len;
 } Event_array;
 
+typedef struct Client_message {
+    uint8_t message_id;
+    uint32_t event_id;
+    uint16_t ticket_count;
+} Client_message;
+
 bool is_number(char* arg_opt) {
 	int index = arg_opt[0] == '-' ? 1 : 0;
 
@@ -300,6 +306,33 @@ size_t read_message(int socket_fd, struct sockaddr_in *client_address,
     return (size_t) len;
 }
 
+Client_message create_client_message(uint8_t message_id, uint32_t event_id,
+                                     uint16_t ticket_count) {
+    Client_message filled;
+    filled.message_id = message_id;
+    filled.event_id = event_id;
+    filled.ticket_count = ticket_count;
+
+    return filled;
+}
+
+void check_err_bool(bool statement, const char* mess) {
+    if (!statement) {
+        printf(mess, "\n");
+
+        exit(1);
+    }
+}
+
+Client_message interpret_client_message(char* message, int received_length) {
+    check_err_bool((received_length < 1), "No data received");
+
+    Client_message full_data;
+    switch (message[0]) {
+        case GET_EVENTS:
+            check_err_bool((received_length > 1), "Message is too long");
+    }
+}
 int main(int argc, char* argv[]) {
 	if (argc == 1) {
 		printf("Required arguments: -f filename\n"
@@ -332,9 +365,9 @@ int main(int argc, char* argv[]) {
                                    message_buffer, sizeof(message_buffer));
         char* client_ip = inet_ntoa(client_address.sin_addr);
         uint16_t client_port = ntohs(client_address.sin_port);
-        printf("received %zd bytes from client %s:%u: '%.*s'\n",
+        printf("received %zd bytes from client %s:%u: '%.*s' |%d|\n",
                read_length, client_ip, client_port,
-               (int) read_length, message_buffer); // note: we specify the length of the printed string
+               (int) read_length, message_buffer, (int) message_buffer[0]); // note: we specify the length of the printed string
 
     } while (read_length > 0);
 
