@@ -382,7 +382,7 @@ Client_message interpret_client_message(char* message, size_t received_length,
 
             uint16_t tickets_count = 0;
             int ticket_begin = 1 + EVENT_ID_OCT;
-            tickets_count = ntohl(tickets_count |= bitshift_to_retrieve_message(ticket_begin,
+            tickets_count = ntohs(tickets_count |= bitshift_to_retrieve_message(ticket_begin,
                                                     ticket_begin + TICK_COU_OCT,
                                                     message));
             printf("TICKETS %d\n", tickets_count);
