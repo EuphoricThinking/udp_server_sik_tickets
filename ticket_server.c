@@ -476,7 +476,8 @@ char* generate_cookie() {
     char* sweet_cookie = malloc(COOKIE_OCT);
 
     for (int i = 0; i < COOKIE_OCT; i++) {
-        sweet_cookie[i] = rand()%
+        sweet_cookie[i] = (char)(rand()%(COOKIE_ASCII_MIN + 1 - COOKIE_ASCII_MAX)
+                            + COOKIE_ASCII_MIN);
     }
 
     return sweet_cookie;
