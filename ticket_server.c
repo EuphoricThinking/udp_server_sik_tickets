@@ -396,10 +396,24 @@ Client_message interpret_client_message(char* message, size_t received_length,
 
             return result_message;
 
-        //TODO get tickets
+        case GET_TICKETS: //TODO error checking
+            if (received_length != (MESS_ID_OCT + RES_ID_OCT + COOKIE_OCT))
+                return result_message;
+
+            uint32_t reservation_id = ntohl(bitshift_to_retrieve_message(
+                    1, 1 + RES_ID_OCT, message));
+            result_message.reservation_id = reservation_id;
+
+            message[received_length] = '\0';
+            char* cookie = message + (2 + RES_ID_OCT); //does it work?
+
+            result_message.reservation_id = reservation_id;
+            result_message.cookie = cookie;
+
+            return result_message;
     }
 
-	return result_message;
+    return result_message;
 }
 
 int main(int argc, char* argv[]) {
