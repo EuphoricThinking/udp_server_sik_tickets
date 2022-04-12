@@ -370,13 +370,21 @@ void send_message(int socket_fd, const struct sockaddr_in *client_address, const
 }
 
 void fill_buffer(int start, int end, char* buffer, uint32_t converted_htonl) {
+    uint8_t to_be_written = 0;
+
     for (int i = start; i < end; i++) {
-        
+        to_be_written |= converted_htonl >> 8*(i - start);
+        buffer[i] = to_be_written;
+        to_be_written = 0;
     }
 }
-void handle_client_message(Client_message from_client, char* message) {
+
+void handle_client_message(Client_message from_client, char* message,
+                           int socket_fd,
+                           const struct sockaddr_in *client_address) {
     size_t length_to_send;
 
+    bool to_be_ignored = false;
     switch (from_client.message_id) {
         case ERR_MESS_ID:
             if (from_client.ticket_count == ERR_EVENTS_TICK) {
@@ -385,16 +393,31 @@ void handle_client_message(Client_message from_client, char* message) {
                 message[0] = BAD_REQUEST;
 
                 uint32_t event_id_to_send = htonl(from_client.event_id);
+                fill_buffer(1, 1 + EVENT_ID_OCT, message, event_id_to_send);
 
-
+                //send_message(socket_fd, client_address, message, length_to_send);
             }
             else if (from_client.ticket_count == ERR_RES) {
+                length_to_send = MESS_ID_OCT + RES_ID_OCT;
 
+                message[0] = BAD_REQUEST;
+
+                uint32_t reservation_id_to_send = htonl(from_client.reservation_id);
+                fill_buffer(1, 1 + RES_ID_OCT, message, reservation_id_to_send);
+
+                //send_message(socket_fd, client_address, message, length_to_send);
+            }
+            else {
+                to_be_ignored = true;
             }
 
             break; //incorrect length etc. - simply skip
     }
+
+    if (!to_be_ignored) send_message(socket_fd, client_address, message,
+                                     length_to_send);
 }
+
 Client_message interpret_client_message(char* message, size_t received_length,
                                         Event_array events) { //TODO check if reservation has been made
     Client_message result_message = create_client_message(ERR_MESS_ID, 0, 0, 0, "");
@@ -511,6 +534,8 @@ int main(int argc, char* argv[]) {
                                                                    read_length,
                                                                    read_events);
         print_client_message(received_message);
+        handle_client_message(received_message, message_buffer, socket_fd,
+                              &client_address);
 
     } while (read_length > 0);
 
