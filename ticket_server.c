@@ -316,7 +316,7 @@ Client_message create_client_message(uint8_t message_id, uint32_t event_id,
     return filled;
 }
 
-void check_err_bool(bool statement, const char* mess) {
+void check_err(bool statement, const char* mess) {
     if (!statement) {
         printf(mess, "\n");
 
@@ -324,15 +324,17 @@ void check_err_bool(bool statement, const char* mess) {
     }
 }
 
-void interpret_client_message(char* message, int received_length) {
-    check_err_bool((received_length < 1), "No data received");
+Client_message interpret_client_message(char* message, int received_length) {
+    check_err((received_length > 0), "No data received");
 
     Client_message full_data;
-    switch (ntohl(message[0])) {
+    uint32_t message_id_ntohl = ntohl(message[0]);
+    uint8_t message_id = 0;
+    switch (message_id_ntohl) {
         case GET_EVENTS:
-            check_err_bool((received_length > 1), "Message is too long");
+            check_err((received_length == 1), "Message is too long");
 
-            break;
+            return create_client_message(message_id | message_id_ntohl, 0, 0);
     }
 }
 
