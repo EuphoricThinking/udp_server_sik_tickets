@@ -324,15 +324,18 @@ void check_err_bool(bool statement, const char* mess) {
     }
 }
 
-Client_message interpret_client_message(char* message, int received_length) {
+void interpret_client_message(char* message, int received_length) {
     check_err_bool((received_length < 1), "No data received");
 
     Client_message full_data;
-    switch (message[0]) {
+    switch (ntohl(message[0])) {
         case GET_EVENTS:
             check_err_bool((received_length > 1), "Message is too long");
+
+            break;
     }
 }
+
 int main(int argc, char* argv[]) {
 	if (argc == 1) {
 		printf("Required arguments: -f filename\n"
