@@ -45,7 +45,7 @@
 #define RESERVATION     4
 #define TICKETS         6
 #define BAD_REQUEST     255
-#define ERR_MESS_ID     7
+#define ERR_MESS_ID     0
 
 #define MESS_ID_OCT     1
 #define DESC_LEN_OCT    1
@@ -352,34 +352,30 @@ uint32_t bitshift_to_retrieve_message(int begining, int end, char* message) {
 
 Client_message interpret_client_message(char* message, int received_length,
                                         Event_array events) { //TODO check if reservation has been made
-    Client_message error_message = create_client_message(ERR_MESS_ID, 0, 0, 0, "");
-    if (received_length == 0) return error_message;
+    Client_message result_message = create_client_message(ERR_MESS_ID, 0, 0, 0, "");
+    if (received_length == 0) return result_message;
 
-    Client_message full_data;
     uint32_t message_id_ntohl = ntohl(message[0]);
     uint8_t message_id = 0;
 
     if (message_id_ntohl != GET_EVENTS && message_id_ntohl != GET_RESERVATION
-        && message_id_ntohl != GET_TICKETS) return error_message;
+        && message_id_ntohl != GET_TICKETS) return result_message;
 
     switch (message_id_ntohl) {
         case GET_EVENTS:
-            if (received_length > 1) return error_message;
+            if (received_length > 1) return result_message;
 
             return create_client_message(message_id | message_id_ntohl, 0, 0,
                                          0, "");
         case GET_RESERVATION:
             if (received_length != (MESS_ID_OCT + EVENT_ID_OCT + TICK_COU_OCT))
-                return error_message;
+                return result_message;
 
             uint32_t event_id = bitshift_to_retrieve_message(1,
                                                              EVENT_ID_OCT + 1,
                                                              message);
-            if (event_id > events.len) {
-                error_message.event_id = event_id;
-
-                return error_message;
-            }
+            result_message.event_id = event_id;
+            if (event_id > events.len) return result_message;
 
             uint16_t tickets_count = 0;
             int ticket_begin = 1 + EVENT_ID_OCT;
@@ -387,7 +383,14 @@ Client_message interpret_client_message(char* message, int received_length,
                                                     ticket_begin + TICK_COU_OCT,
                                                     message);
             if (tickets_count == 0 || events.arr[event_id].available_tickets
-                < tickets_count)
+                < tickets_count || UDP_MAX < TICKET_OCT*tickets_count +
+                MESS_ID_OCT + RES_ID_OCT + TICK_COU_OCT)
+                    return result_message;
+
+            result_message.message_id |= message_id_ntohl;
+            result_message.ticket_count |= tickets_count;
+
+            return result_message;
     }
 }
 
