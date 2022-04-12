@@ -11,6 +11,7 @@
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
+#include <time.h>
 
 
 #define OPTSTRING "f:p:t:"
@@ -80,11 +81,16 @@ typedef struct Event_array {
 typedef struct Reservation {
     uint16_t ticket_count;
     uint64_t* ticket_ids;
-    uint64_t expiration;
+    time_t expiration;
     bool has_been_completed;
     char* cookie;
     uint32_t event_id;
 } Reservation;
+
+typedef struct Reservation_array {
+    Reservation* arr;
+    size_t len;
+} Reservation_array;
 
 typedef struct Client_message {
     uint8_t message_id;
@@ -443,6 +449,20 @@ Client_message create_client_message(uint8_t message_id, uint32_t event_id,
 
     return filled;
 }
+
+Reservation create_reservation(uint16_t ticket_count, uint64_t* ticket_ids,
+                               time_t expiration, char* cookie, uint32_t event_id) {
+    Reservation initial_reservation;
+    initial_reservation.ticket_count = ticket_count;
+    initial_reservation.ticket_ids = ticket_ids;
+    initial_reservation.expiration = expiration;
+    initial_reservation.has_been_completed = false;
+    initial_reservation.cookie = cookie;
+    initial_reservation.event_id = event_id;
+
+    return initial_reservation;
+}
+
 void print_cookies(char* cookies) {
     for (int i = 0; i < COOKIE_OCT; i++) {
         printf("%c", cookies[i]);
@@ -542,11 +562,29 @@ void handle_client_message(Client_message from_client, char* message,
                                      length_to_send);
 }
 
-void free_expired(Event_array) {
+void free_expired(Event_array* events, Queue* expiring, const Reservation_array *reservs) {
+    time_t expiration;
+    List* reservation;
+    while (!is_empty(expiring)) {
+        expiration = reservs->arr[top(expiring)->val].expiration;
 
+        if (expiration <= time(NULL)) {
+            break;
+        }
+        else {
+            reservation = pop(expiring);
+            Reservation cancelled = reservs->arr[reservation->val];
+            Event* event_to_add_tickets = &(events->arr[cancelled.event_id]);
+            event_to_add_tickets->available_tickets += cancelled.ticket_count;
+
+            delete_node(reservation);
+        }
+    }
 }
+
 Client_message interpret_client_message(char* message, size_t received_length,
-                                        Event_array* events, Queue* expiring) { //TODO check if reservation has been made
+                                        Event_array* events, Queue* expiring,
+                                        const Reservation_array* reservs) { //TODO check if reservation has been made
     Client_message result_message = create_client_message(ERR_MESS_ID, 0, 0, 0, "");
     if (received_length == 0) return result_message;
 
@@ -589,6 +627,7 @@ Client_message interpret_client_message(char* message, size_t received_length,
                                                     ticket_begin + TICK_COU_OCT,
                                                     message));
             printf("TICKETS %d\n", tickets_count);
+            free_expired(events, expiring, reservs);
             if (tickets_count == 0 || events->arr[event_id].available_tickets
                 < tickets_count || UDP_MAX < (TICKET_OCT*tickets_count +
                 MESS_ID_OCT + RES_ID_OCT + TICK_COU_OCT)) {
