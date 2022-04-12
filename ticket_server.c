@@ -62,6 +62,9 @@
 #define COOKIE_ASCII_MIN    33
 #define COOKIE_ASCII_MAX    126
 
+#define ERR_EVENTS_TICK 1
+#define ERR_RES         2
+
 typedef struct Event {
     char* description;
 //    uint8_t text_length;
@@ -357,7 +360,19 @@ uint32_t bitshift_to_retrieve_message(int begining, int end, char* message) {
                 ticket_count |= ((uint32_t))
             }
  */
+void handle_client_message(Client_message from_client) {
+    switch (from_client.message_id) {
+        case ERR_MESS_ID:
+            if (from_client.ticket_count == ERR_EVENTS_TICK) {
 
+            }
+            else if (from_client.ticket_count == ERR_RES) {
+
+            }
+
+            break; //incorrect length etc. - simply skip
+    }
+}
 Client_message interpret_client_message(char* message, size_t received_length,
                                         Event_array events) { //TODO check if reservation has been made
     Client_message result_message = create_client_message(ERR_MESS_ID, 0, 0, 0, "");
@@ -386,7 +401,11 @@ Client_message interpret_client_message(char* message, size_t received_length,
                                                              message));
             result_message.event_id = event_id;
             printf("len: %ld id: %d\n", events.len, event_id);
-            if (event_id > (events.len - 1)) return result_message;
+            if (event_id > (events.len - 1)) {
+                result_message.ticket_count = ERR_EVENTS_TICK;
+
+                return result_message;
+            }
 
             uint16_t tickets_count = 0;
             int ticket_begin = 1 + EVENT_ID_OCT;
@@ -396,8 +415,11 @@ Client_message interpret_client_message(char* message, size_t received_length,
             printf("TICKETS %d\n", tickets_count);
             if (tickets_count == 0 || events.arr[event_id].available_tickets
                 < tickets_count || UDP_MAX < (TICKET_OCT*tickets_count +
-                MESS_ID_OCT + RES_ID_OCT + TICK_COU_OCT))
+                MESS_ID_OCT + RES_ID_OCT + TICK_COU_OCT)) {
+                    result_message.ticket_count = ERR_EVENTS_TICK;
+
                     return result_message;
+            }
 
             result_message.message_id |= message_id_ntohl;
             result_message.ticket_count |= tickets_count;
