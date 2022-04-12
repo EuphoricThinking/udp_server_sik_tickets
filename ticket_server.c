@@ -360,10 +360,32 @@ uint32_t bitshift_to_retrieve_message(int begining, int end, char* message) {
                 ticket_count |= ((uint32_t))
             }
  */
-void handle_client_message(Client_message from_client) {
+void send_message(int socket_fd, const struct sockaddr_in *client_address, const char *message, size_t length) {
+    socklen_t address_length = (socklen_t) sizeof(*client_address);
+    int flags = 0;
+    ssize_t sent_length = sendto(socket_fd, message, length, flags,
+                                 (struct sockaddr *) client_address, address_length);
+    check_err_perror((sent_length == (ssize_t) length),
+                     "Error while sending from server");
+}
+
+void fill_buffer(int start, int end, char* buffer, uint32_t converted_htonl) {
+    for (int i = start; i < end; i++) {
+        
+    }
+}
+void handle_client_message(Client_message from_client, char* message) {
+    size_t length_to_send;
+
     switch (from_client.message_id) {
         case ERR_MESS_ID:
             if (from_client.ticket_count == ERR_EVENTS_TICK) {
+                length_to_send = MESS_ID_OCT + EVENT_ID_OCT;
+
+                message[0] = BAD_REQUEST;
+
+                uint32_t event_id_to_send = htonl(from_client.event_id);
+
 
             }
             else if (from_client.ticket_count == ERR_RES) {
