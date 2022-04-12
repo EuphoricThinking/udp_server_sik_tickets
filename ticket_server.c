@@ -77,6 +77,8 @@ typedef struct Client_message {
     uint8_t message_id;
     uint32_t event_id;
     uint16_t ticket_count;
+    uint32_t reservation_id;
+    char* cookie;
 } Client_message;
 
 bool is_number(char* arg_opt) {
@@ -307,11 +309,14 @@ size_t read_message(int socket_fd, struct sockaddr_in *client_address,
 }
 
 Client_message create_client_message(uint8_t message_id, uint32_t event_id,
-                                     uint16_t ticket_count) {
+                                     uint16_t ticket_count,
+                                     uint32_t reservation_id, char* cookie) {
     Client_message filled;
     filled.message_id = message_id;
     filled.event_id = event_id;
     filled.ticket_count = ticket_count;
+    filled.reservation_id = reservation_id;
+    filled.cookie;
 
     return filled;
 }
@@ -324,6 +329,12 @@ void check_err(bool statement, const char* mess) {
     }
 }
 
+void print_client_message(Client_message clm) {
+    printf("mess : %d | event: %d | tick_count: %d | res: %d | cookie:"
+           " %s\n", clm.message_id, clm.event_id, clm.ticket_count, clm.reservation_id,
+           clm.cookie);
+}
+
 Client_message interpret_client_message(char* message, int received_length) {
     check_err((received_length > 0), "No data received");
 
@@ -334,7 +345,8 @@ Client_message interpret_client_message(char* message, int received_length) {
         case GET_EVENTS:
             check_err((received_length == 1), "Message is too long");
 
-            return create_client_message(message_id | message_id_ntohl, 0, 0);
+            return create_client_message(message_id | message_id_ntohl, 0, 0,
+                                         0, "");
     }
 }
 
