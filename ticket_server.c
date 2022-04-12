@@ -77,6 +77,15 @@ typedef struct Event_array {
     size_t len;
 } Event_array;
 
+typedef struct Reservation {
+    uint16_t ticket_count;
+    uint64_t* ticket_ids;
+    uint64_t expiration;
+    bool has_been_completed;
+    char* cookie;
+    uint32_t event_id;
+} Reservation;
+
 typedef struct Client_message {
     uint8_t message_id;
     uint32_t event_id;
@@ -91,7 +100,7 @@ typedef struct Client_message {
  */
 
 typedef struct List {
-    uint64_t val;
+    uint32_t val;
 
     struct List* next;
 } List;
@@ -103,7 +112,7 @@ typedef struct Queue {
     int num_elements;
 } Queue;
 
-List* init_node(uint64_t val) {
+List* init_node(uint32_t val) {
     List* l = malloc(sizeof(List));
 
     l->next = NULL;
@@ -452,10 +461,8 @@ void print_client_message(Client_message clm, bool if_cookies) {
 uint32_t bitshift_to_retrieve_message(int begining, int end, char* message) {
     uint32_t result = 0;
     for (int i = begining; i < end; i++) {
-        printf("ind %d BYTE %d 32 %d \n", i, message[i], (uint32_t) message[i]);
         result |= ((uint32_t) message[i] << 8*(i - begining));
     }
-    printf("end\n");
     return result;
 }
 
@@ -527,14 +534,19 @@ void handle_client_message(Client_message from_client, char* message,
             }
 
             break; //incorrect length etc. - simply skip
+
+
     }
 
     if (!to_be_ignored) send_message(socket_fd, client_address, message,
                                      length_to_send);
 }
 
+void free_expired(Event_array) {
+
+}
 Client_message interpret_client_message(char* message, size_t received_length,
-                                        Event_array events) { //TODO check if reservation has been made
+                                        Event_array* events, Queue* expiring) { //TODO check if reservation has been made
     Client_message result_message = create_client_message(ERR_MESS_ID, 0, 0, 0, "");
     if (received_length == 0) return result_message;
 
@@ -560,18 +572,12 @@ Client_message interpret_client_message(char* message, size_t received_length,
                                                              EVENT_ID_OCT + 1,
                                                              message));
             result_message.event_id = event_id;
-//            printf("len: %ld id: %d\n", events.len, event_id);
-//            for (int x = 0; x < 6; ++ x) {
-//                printf("UNCAST BYTE %d: %d\n", x, ntohl(message[x]));
-//            }
-//            void* ptr = message + 1;
-//            uint32_t converted = *((uint32_t*) ptr);
-//            printf("CAST %d\n", converted);
+
             char* ptr = message + 1;
             uint32_t converted = *(uint32_t*)ptr;
             printf("CONVERTED %d\n", converted);
 
-            if (event_id > (events.len - 1)) {
+            if (event_id > (events->len - 1)) {
                 result_message.ticket_count = ERR_EVENTS_TICK;
 
                 return result_message;
@@ -583,7 +589,7 @@ Client_message interpret_client_message(char* message, size_t received_length,
                                                     ticket_begin + TICK_COU_OCT,
                                                     message));
             printf("TICKETS %d\n", tickets_count);
-            if (tickets_count == 0 || events.arr[event_id].available_tickets
+            if (tickets_count == 0 || events->arr[event_id].available_tickets
                 < tickets_count || UDP_MAX < (TICKET_OCT*tickets_count +
                 MESS_ID_OCT + RES_ID_OCT + TICK_COU_OCT)) {
                     result_message.ticket_count = ERR_EVENTS_TICK;
@@ -630,7 +636,7 @@ int main(int argc, char* argv[]) {
 	char* filename = read_options(argc, argv, &port, &timeout);
 	printf("FILENAME %s\n", filename);
     Event_array read_events = read_process_save_file_content(filename);
-    print_events(read_events);
+//    print_events(read_events);
     printf("Listening on port %d\n", port);
 
     char message_buffer[UDP_MAX + 1];
@@ -643,7 +649,8 @@ int main(int argc, char* argv[]) {
 
     int socket_fd = bind_socket(port_converted);
     struct sockaddr_in client_address;
-    printf("BYTE ORDER%d\n'", __BYTE_ORDER == __LITTLE_ENDIAN);
+//    printf("BYTE ORDER%d\n'", __BYTE_ORDER == __LITTLE_ENDIAN);
+    Queue* reservation_expiring = init_queue();
 
     do {
         read_length = read_message(socket_fd, &client_address,
@@ -657,9 +664,11 @@ int main(int argc, char* argv[]) {
 
         Client_message received_message = interpret_client_message(message_buffer,
                                                                    read_length,
-                                                                   read_events);
+                                                                   &read_events,
+                                                                   reservation_expiring);
         print_client_message(received_message, false);
         printf("\n");
+
         handle_client_message(received_message, message_buffer, socket_fd,
                               &client_address);
 
