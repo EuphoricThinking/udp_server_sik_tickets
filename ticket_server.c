@@ -45,6 +45,7 @@
 #define RESERVATION     4
 #define TICKETS         6
 #define BAD_REQUEST     255
+#define ERR_MESS_ID     7
 
 #define MESS_ID_OCT     1
 #define DESC_LEN_OCT    1
@@ -321,14 +322,6 @@ Client_message create_client_message(uint8_t message_id, uint32_t event_id,
     return filled;
 }
 
-void check_err(bool statement, const char* mess) {
-    if (!statement) {
-        printf(mess, "\n");
-
-        exit(1);
-    }
-}
-
 void print_client_message(Client_message clm) {
     printf("mess : %d | event: %d | tick_count: %d | res: %d | cookie:"
            " %s\n", clm.message_id, clm.event_id, clm.ticket_count, clm.reservation_id,
@@ -336,17 +329,32 @@ void print_client_message(Client_message clm) {
 }
 
 Client_message interpret_client_message(char* message, int received_length) {
-    check_err((received_length > 0), "No data received");
+    Client_message error_message = create_client_message(ERR_MESS_ID, 0, 0, 0, "");
+    if (received_length == 0) return error_message;
 
     Client_message full_data;
     uint32_t message_id_ntohl = ntohl(message[0]);
     uint8_t message_id = 0;
     switch (message_id_ntohl) {
         case GET_EVENTS:
-            check_err((received_length == 1), "Message is too long");
+            if (received_length > 1) return error_message;
 
             return create_client_message(message_id | message_id_ntohl, 0, 0,
                                          0, "");
+        case GET_RESERVATION:
+            if (received_length != (MESS_ID_OCT + EVENT_ID_OCT + TICK_COU_OCT))
+                return error_message;
+
+            uint32_t event_id = 0;
+            for (int i = 1; i <= EVENT_ID_OCT; i++) {
+                event_id |= ((uint32_t) message[i] << 8*(i - 1));
+            }
+
+            uint16_t ticket_count = 0;
+            for (int i = 2 + EVENT_ID_OCT; i <= 1 + EVENT_ID_OCT + TICK_COU_OCT;
+                i++) {
+                ticket_count |= ((uint32_t))
+            }
     }
 }
 
