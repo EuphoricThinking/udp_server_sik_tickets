@@ -356,7 +356,6 @@ Client_message interpret_client_message(char* message, int received_length,
     if (received_length == 0) return result_message;
 
     uint32_t message_id_ntohl = ntohl(message[0]);
-    uint8_t message_id = 0;
 
     if (message_id_ntohl != GET_EVENTS && message_id_ntohl != GET_RESERVATION
         && message_id_ntohl != GET_TICKETS) return result_message;
@@ -365,8 +364,10 @@ Client_message interpret_client_message(char* message, int received_length,
         case GET_EVENTS:
             if (received_length > 1) return result_message;
 
-            return create_client_message(message_id | message_id_ntohl, 0, 0,
-                                         0, "");
+            result_message.message_id |= message_id_ntohl;
+
+            return result_message;
+
         case GET_RESERVATION:
             if (received_length != (MESS_ID_OCT + EVENT_ID_OCT + TICK_COU_OCT))
                 return result_message;
@@ -375,6 +376,7 @@ Client_message interpret_client_message(char* message, int received_length,
                                                              EVENT_ID_OCT + 1,
                                                              message);
             result_message.event_id = event_id;
+
             if (event_id > events.len) return result_message;
 
             uint16_t tickets_count = 0;
@@ -383,14 +385,16 @@ Client_message interpret_client_message(char* message, int received_length,
                                                     ticket_begin + TICK_COU_OCT,
                                                     message);
             if (tickets_count == 0 || events.arr[event_id].available_tickets
-                < tickets_count || UDP_MAX < TICKET_OCT*tickets_count +
-                MESS_ID_OCT + RES_ID_OCT + TICK_COU_OCT)
+                < tickets_count || UDP_MAX < (TICKET_OCT*tickets_count +
+                MESS_ID_OCT + RES_ID_OCT + TICK_COU_OCT))
                     return result_message;
 
             result_message.message_id |= message_id_ntohl;
             result_message.ticket_count |= tickets_count;
 
             return result_message;
+
+        //TODO get tickets
     }
 }
 
