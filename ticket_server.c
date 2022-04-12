@@ -321,11 +321,19 @@ Client_message create_client_message(uint8_t message_id, uint32_t event_id,
 
     return filled;
 }
+void print_cookies(char* cookies) {
+    for (int i = 0; i < COOKIE_OCT; i++) {
+        printf("%c", cookies[i]);
+    }
+
+    printf("\n");
+}
 
 void print_client_message(Client_message clm) {
-    printf("mess : %d | event: %d | tick_count: %d | res: %d | cookie:"
-           " %s\n", clm.message_id, clm.event_id, clm.ticket_count, clm.reservation_id,
-           clm.cookie);
+    printf("mess : %d | event: %d | tick_count: %d | res: %d | cookie: "
+           , clm.message_id, clm.event_id, clm.ticket_count, clm.reservation_id);
+//           clm.cookie);
+    print_cookies(clm.cookie);
 }
 
 uint32_t bitshift_to_retrieve_message(int begining, int end, char* message) {
@@ -405,10 +413,11 @@ Client_message interpret_client_message(char* message, size_t received_length,
             result_message.reservation_id = reservation_id;
 
             message[received_length] = '\0';
-            char* cookie = message + (2 + RES_ID_OCT); //does it work?
+            char* cookie = message + (1 + RES_ID_OCT); //does it work?
 
             result_message.reservation_id = reservation_id;
             result_message.cookie = cookie;
+//            result_message.cookie = message;
 
             return result_message;
     }
@@ -449,9 +458,10 @@ int main(int argc, char* argv[]) {
                                    message_buffer, sizeof(message_buffer));
         char* client_ip = inet_ntoa(client_address.sin_addr);
         uint16_t client_port = ntohs(client_address.sin_port);
-        printf("received %zd bytes from client %s:%u: '%.*s' |%d|\n",
+//        message_buffer[read_length] = '\0';
+        printf("received %zd bytes from client %s:%u: '%.*s' |%c|\n",
                read_length, client_ip, client_port,
-               (int) read_length, message_buffer, (int) message_buffer[0]); // note: we specify the length of the printed string
+               (int) read_length, message_buffer, message_buffer[1 + RES_ID_OCT]); // note: we specify the length of the printed string
 
         Client_message received_message = interpret_client_message(message_buffer,
                                                                    read_length,
