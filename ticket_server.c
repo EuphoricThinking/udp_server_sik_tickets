@@ -204,7 +204,7 @@ bool is_empty(Queue* q) {
 
 
 /*
- * End of queu
+ * End of queue
  */
 
 
@@ -463,6 +463,25 @@ Reservation create_reservation(uint16_t ticket_count, uint64_t* ticket_ids,
     return initial_reservation;
 }
 
+void delete_reservations(Reservation* arr, size_t len) {
+    for (size_t i = 0; i < len; i++) {
+        free(arr[i].cookie);
+        free(arr[i].ticket_ids);
+    }
+
+    free(arr);
+}
+
+char* generate_cookie() {
+    char* sweet_cookie = malloc(COOKIE_OCT);
+
+    for (int i = 0; i < COOKIE_OCT; i++) {
+        sweet_cookie[i] = rand()%
+    }
+
+    return sweet_cookie;
+}
+
 void print_cookies(char* cookies) {
     for (int i = 0; i < COOKIE_OCT; i++) {
         printf("%c", cookies[i]);
@@ -575,6 +594,8 @@ void handle_client_message(Client_message from_client, char* message,
             }
 
             break; //incorrect length etc. - simply skip
+
+        case GET_RESERVATION:
 
 
     }
@@ -692,6 +713,7 @@ int main(int argc, char* argv[]) {
 //    printf("BYTE ORDER%d\n'", __BYTE_ORDER == __LITTLE_ENDIAN);
     Queue* reservation_expiring = init_queue();
     Reservation_array reservations;
+    srand(time(NULL));
 
     do {
         read_length = read_message(socket_fd, &client_address,
@@ -717,6 +739,8 @@ int main(int argc, char* argv[]) {
     } while (read_length > 0);
 
     delete_event_array(read_events.arr, read_events.len);
+    delete_queue(reservation_expiring);
+    delete_reservations(reservations.arr, reservations.len);
 
 	return 0;
 }
