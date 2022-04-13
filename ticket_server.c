@@ -124,7 +124,7 @@ typedef struct Queue {
     int num_elements;
 } Queue;
 
-List* init_node(uint32_t val) {
+List* init_node(size_t val) {
     List* l = malloc(sizeof(List));
 
     l->next = NULL;
@@ -162,7 +162,7 @@ Queue* init_queue() {
     return q;
 }
 
-void push(Queue* q, uint64_t to_insert_val) {
+void push(Queue* q, size_t to_insert_val) {
     if (q->num_elements == 0) {
         q->first = init_node(to_insert_val);
         q->last = q->first;
@@ -714,9 +714,11 @@ void handle_client_message(Client_message from_client, char* message,
 
             send_message(socket_fd, client_address, message, length_to_send);
 
-            requested_reservation = &(reservs->arr[(reservs->last_index) - 1]);
+            size_t requested_index = (reservs->last_index) - 1;
+            requested_reservation = &(reservs->arr[requested_index]);
             requested_reservation->expiration = expiration_time;
-            
+            push(expiring, requested_index);
+
 
             Event* requested_event =
                     &(events->arr[from_client.event_id]);
@@ -971,7 +973,7 @@ int main(int argc, char* argv[]) {
 
         handle_client_message(received_message, message_buffer, socket_fd,
                               &client_address, &reservations, timeout,
-                              &ticket_seed, &read_events);
+                              &ticket_seed, &read_events, reservation_expiring);
 
     } while (true); //(read_length > 0);
 #pragma clang diagnostic pop
