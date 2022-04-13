@@ -264,7 +264,7 @@ void test_optional_range(int* value, char mode) {
     }
 }
 
-char* read_options(int argc, char* argv[], int* port_number, time_t* timeout) {
+char* read_options(int argc, char* argv[], int* port_number, int* timeout) {
 	int option;
 	char* filename = NULL;
 
@@ -287,7 +287,7 @@ char* read_options(int argc, char* argv[], int* port_number, time_t* timeout) {
 		case TIME_OPT:
             test_optional_initial_correct(optarg, TIME_OPT);
 
-			*timeout = atoi(optarg);
+			*timeout = atoll(optarg);
             test_optional_range(timeout, TIME_OPT);
 
 			break;
@@ -934,7 +934,7 @@ int main(int argc, char* argv[]) {
 		exit(1);
 	}
 
-	time_t timeout = TIME_DEF;
+	int timeout = TIME_DEF;
 	int port = PORT_DEF;
 
 	char* filename = read_options(argc, argv, &port, &timeout);
@@ -978,7 +978,7 @@ int main(int argc, char* argv[]) {
         printf("\n");
 
         handle_client_message(received_message, message_buffer, socket_fd,
-                              &client_address, &reservations, timeout,
+                              &client_address, &reservations, (time_t)timeout,
                               &ticket_seed, &read_events, reservation_expiring);
 
     } while (true); //(read_length > 0);
