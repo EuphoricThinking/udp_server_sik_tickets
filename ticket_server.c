@@ -629,11 +629,11 @@ void resolve_a_single_ticket(uint8_t storage[], uint64_t single_ticket) {
 void fill_buffer_with_tickets(uint16_t ticket_count, uint64_t* tickets,
                               char* buffer) {
     uint8_t single_ticket[TICKET_OCT];
-    char* curent_pointer = buffer;
+    char* current_pointer = buffer;
     for (uint16_t i = 0; i < ticket_count; i++) {
         resolve_a_single_ticket(single_ticket, tickets[i]);
-        fill_buffer_with_a_single_ticket(buffer, single_ticket);
-        curent_pointer += TICKET_OCT;
+        fill_buffer_with_a_single_ticket(current_pointer, single_ticket);
+        current_pointer += TICKET_OCT;
     }
 }
 
@@ -737,7 +737,7 @@ void handle_client_message(Client_message from_client, char* message,
 
             if (!(requested_reservation->ticket_ids)) {
                 requested_reservation->ticket_ids =
-                    malloc(sizeof(uint64_t)*requested_reservation->ticket_count);
+                    malloc((requested_reservation->ticket_count)*sizeof(uint64_t));
 
                 check_err_perror((requested_reservation->ticket_ids != NULL),
                                  "Error while assigning the tickets");
@@ -747,7 +747,7 @@ void handle_client_message(Client_message from_client, char* message,
                 }
             }
 
-            message[0] = TICKETS;
+            current_pointer[0] = TICKETS;
             current_pointer++;
 
             *(uint32_t*)current_pointer = htonl(from_client.reservation_id); //+ RES_IND_BIAS);
