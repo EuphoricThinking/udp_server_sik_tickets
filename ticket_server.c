@@ -747,7 +747,7 @@ void handle_client_message(Client_message from_client, char* message,
             message[0] = TICKETS;
             current_pointer++;
 
-            *(uint32_t*)current_pointer = htonl(from_client.reservation_id + RES_IND_BIAS);
+            *(uint32_t*)current_pointer = htonl(from_client.reservation_id); //+ RES_IND_BIAS);
             current_pointer += 4;
 
             *(uint16_t*)current_pointer = htons(from_client.ticket_count);
