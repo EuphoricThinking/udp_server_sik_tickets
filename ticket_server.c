@@ -771,7 +771,7 @@ void handle_client_message(Client_message from_client, char* message,
 
             current_pointer[0] = EVENTS;
 
-            for (int i = 0; i < events->len; i++) {
+            for (uint32_t i = 0; i < events->len; i++) {
                 current_event = events->arr[i];
                 one_event_block_to_send = constant_block
                                         + current_event.description_octets;
@@ -780,7 +780,7 @@ void handle_client_message(Client_message from_client, char* message,
                     break;
                 }
                 else {
-                    *(uint32_t*)current_pointer = htonl((uint32_t)i);
+                    *(uint32_t*)current_pointer = htonl(i);
                     current_pointer += 4;
 
                     *(uint16_t*)current_pointer = htons(current_event.available_tickets);
