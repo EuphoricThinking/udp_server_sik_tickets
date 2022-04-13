@@ -490,9 +490,9 @@ void insert_new_reservation(Reservation_array* reservations, uint16_t ticket_cou
                             uint64_t* ticket_ids, time_t expiration, char* cookie,
                             uint32_t event_id) {
     if (reservations->last_index >= reservations->size) {
-        size_t new_size = reservations->size*2 + 1;
+        size_t new_size = (reservations->size)*2 + sizeof(Reservation);
         Reservation* new_array = realloc(reservations->arr, new_size);
-        check_err_perror((new_array != NULL), "Error in extending reseravtions array");
+        check_err_perror((new_array != NULL), "Error in extending reservations array");
 
         reservations->arr = new_array;
         reservations->size = new_size;
@@ -508,7 +508,7 @@ char* generate_cookie() {
     char* sweet_cookie = malloc(COOKIE_OCT);
 
     for (int i = 0; i < COOKIE_OCT; i++) {
-        sweet_cookie[i] = (char)(rand()%(COOKIE_ASCII_MIN + 1 - COOKIE_ASCII_MAX)
+        sweet_cookie[i] = (char)(rand()%(COOKIE_ASCII_MAX + 1 - COOKIE_ASCII_MIN)
                             + COOKIE_ASCII_MIN);
     }
 
@@ -660,22 +660,26 @@ void handle_client_message(Client_message from_client, char* message,
                 length_to_send = MESS_ID_OCT + EVENT_ID_OCT;
                 printf("EVENTS_TICK\n");
 
-                message[0] = BAD_REQUEST;
+                current_pointer[0] = BAD_REQUEST;
+                current_pointer++;
 
                 uint32_t event_id_to_send = htonl(from_client.event_id);
+                *(uint32_t*)current_pointer = event_id_to_send;
 //                fill_buffer(1, 1 + EVENT_ID_OCT, message, event_id_to_send);
-                *(uint32_t*)(message + 1) = event_id_to_send; //TODO does it work
+//                *(uint32_t*)(message + 1) = event_id_to_send; //TODO does it work
                 //send_message(socket_fd, client_address, message, length_to_send);
             }
             else if (from_client.ticket_count == ERR_RES) {
                 printf("RESE_ERR TICk %d ERR_res %d \n", from_client.ticket_count, ERR_RES);
                 length_to_send = MESS_ID_OCT + RES_ID_OCT;
 
-                message[0] = BAD_REQUEST;
+                current_pointer[0] = BAD_REQUEST;
+                current_pointer++;
 
                 uint32_t reservation_id_to_send = htonl(from_client.reservation_id);
+                *(uint32_t*)current_pointer = reservation_id_to_send;
 //                fill_buffer(1, 1 + RES_ID_OCT, message, reservation_id_to_send);
-                *(uint32_t*)(message + 1) = reservation_id_to_send;
+//                *(uint32_t*)(message + 1) = reservation_id_to_send;
 
                 //send_message(socket_fd, client_address, message, length_to_send);
             }
@@ -690,14 +694,22 @@ void handle_client_message(Client_message from_client, char* message,
             length_to_send = MESS_ID_OCT + EVENT_ID_OCT + TICK_COU_OCT
                     + COOKIE_OCT + EXP_TIME_OCT;
 
-            message[0] = RESERVATION;
+            current_pointer[0] = RESERVATION;
             current_pointer++;
 
             insert_new_reservation(reservs, from_client.ticket_count,
                                    NULL, 0, cookie,
                                    from_client.event_id);
-            *(uint32_t*)current_pointer = htonl((reservs->last_index) - 1
-                                            + RES_IND_BIAS);
+
+            size_t requested_index = (reservs->last_index) - 1;
+            requested_reservation = &(reservs->arr[requested_index]);
+
+            Event* requested_event = &(events->arr[from_client.event_id]);
+            requested_event->available_tickets -= from_client.ticket_count;
+
+            to_be_ignored = true;
+
+            *(uint32_t*)current_pointer = htonl(requested_index + RES_IND_BIAS);
             current_pointer += 4;
 
             *(uint32_t*)current_pointer = htonl(from_client.event_id);
@@ -714,17 +726,8 @@ void handle_client_message(Client_message from_client, char* message,
 
             send_message(socket_fd, client_address, message, length_to_send);
 
-            size_t requested_index = (reservs->last_index) - 1;
-            requested_reservation = &(reservs->arr[requested_index]);
             requested_reservation->expiration = expiration_time;
             push(expiring, requested_index);
-
-
-            Event* requested_event =
-                    &(events->arr[from_client.event_id]);
-            requested_event->available_tickets -= from_client.ticket_count;
-
-            to_be_ignored = true;
 
             break;
 
