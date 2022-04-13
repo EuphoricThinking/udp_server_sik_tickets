@@ -70,6 +70,7 @@
 
 #define DIGIT_ASCII_START   (uint8_t)48
 #define LETTER_ASCII_START  (uint8_t)55 //subtracted bias
+#define BASE_TICK_CONVERT   36
 
 typedef struct Event {
     char* description;
@@ -614,10 +615,17 @@ void fill_buffer_with_a_single_ticket(char* buffer, uint64_t ticket) {
     }
 }
 
-void resolve_a_single_ticket(char[] storage, )
+void resolve_a_single_ticket(uint32_t storage[], uint64_t single_ticket) {
+    int index = TICKET_OCT - 1;
+    while (single_ticket != 0) {
+        storage[index--] = single_ticket % BASE_TICK_CONVERT;
+        single_ticket /= BASE_TICK_CONVERT;
+    }
+}
+
 void fill_buffer_with_tickets(uint16_t ticket_count, uint64_t* tickets,
                               char* buffer) {
-    uint64_t single_ticket[TICKET_OCT];
+    uint8_t single_ticket[TICKET_OCT];
 
     for (uint16_t i = 0; i < ticket_count; i++) {
         fill_buffer_with_a_single_ticket(buffer, tickets[i]);
