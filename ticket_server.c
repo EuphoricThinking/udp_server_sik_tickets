@@ -665,6 +665,8 @@ void handle_client_message(Client_message from_client, char* message,
 
             reservs->arr[(reservs->last_index) - 1].expiration = expiration_time;
             to_be_ignored = true;
+
+            break;
     }
 
     if (!to_be_ignored) send_message(socket_fd, client_address, message,
