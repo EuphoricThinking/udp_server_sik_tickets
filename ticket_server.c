@@ -639,6 +639,7 @@ void handle_client_message(Client_message from_client, char* message,
     bool to_be_ignored = false;
     char* cookie;
     Reservation* requested_reservation;
+    int left_space;
 
     printf("ID: %d ERR: %d \n", from_client.message_id, ERR_MESS_ID);
     uint8_t meesage_id = from_client.message_id;
@@ -745,6 +746,36 @@ void handle_client_message(Client_message from_client, char* message,
                                      current_pointer);
 
             break;
+
+        case GET_EVENTS:
+            left_space = UDP_MAX - MESS_ID_OCT;
+            Event current_event;
+            int constant_block = EVENT_ID_OCT + TICK_COU_OCT + DESC_LEN_OCT;
+            int one_event_block_to_send;
+
+            current_pointer[0] = EVENTS;
+
+            for (int i = 0; i < events->len; i++) {
+                current_event = events->arr[i];
+                one_event_block_to_send = constant_block
+                                        + current_event.description_octets;
+
+                if (0 > (left_space - one_event_block_to_send)) {
+                    break;
+                }
+                else {
+                    *(uint32_t*)current_pointer = htonl((uint32_t)i);
+                    current_pointer += 4;
+
+                    *(uint16_t*)current_pointer = htons(current_event.available_tickets);
+                    current_pointer += 2;
+
+                    *current_pointer = current_event.description_octets;
+                    current_pointer++;
+
+                    
+                }
+            }
     }
 
     if (!to_be_ignored) send_message(socket_fd, client_address, message,
