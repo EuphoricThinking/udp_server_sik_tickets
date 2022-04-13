@@ -270,7 +270,7 @@ char* read_options(int argc, char* argv[], int* port_number, int* timeout) {
 	char* filename = NULL;
 
 	while ((option = getopt(argc, argv, OPTSTRING)) != -1) {
-		printf("READ: %c\n", option);
+//		printf("READ: %c\n", option);
 		switch (option) {
 		case FILE_OPT:
             test_whether_arg_is_passed(optarg, FILE_ARG);
@@ -353,7 +353,7 @@ Event_array read_process_save_file_content(char* path) {
 //
 //        exit(1);
 //    }
-    printf("ROUNDUP %d\n", ROUNDUP_8(65535));
+//    printf("ROUNDUP %d\n", ROUNDUP_8(65535));
     FILE* opened = fopen(path, "r");
     if (!opened) {
         perror(path);
@@ -494,7 +494,7 @@ Reservation_array create_res_array() {
 void insert_new_reservation(Reservation_array* reservations, uint16_t ticket_count,
                             uint64_t* ticket_ids, time_t expiration, char* cookie,
                             uint32_t event_id) {
-    printf("enter insert\n");
+//    printf("enter insert\n");
     size_t* num_available_slots = &(reservations->num_available_slots);
     if (reservations->last_index >= *num_available_slots) {
         *num_available_slots = (*num_available_slots)*2 + 1;
@@ -510,7 +510,7 @@ void insert_new_reservation(Reservation_array* reservations, uint16_t ticket_cou
                                                      expiration, cookie,
                                                      event_id);
     reservations->arr[(reservations->last_index)++] = new_reservation;
-    printf("leave insert\n");
+//    printf("leave insert\n");
 }
 
 char* generate_cookie() {
@@ -617,12 +617,12 @@ uint8_t determine_char(uint8_t byte) {
 }
 
 void fill_buffer_with_a_single_ticket(char* buffer, uint8_t ticket[]) {
-    printf("single fragment buffer\n");
+//    printf("single fragment buffer\n");
     for (int i = 0; i < TICKET_OCT; i++ ){
         buffer[i] = determine_char(ticket[i]);
-        printf("%c", buffer[i]);
+//        printf("%c", buffer[i]);
     }
-    printf("\n");
+//    printf("\n");
 }
 
 void resolve_a_single_ticket(uint8_t storage[], uint64_t single_ticket) {
@@ -651,7 +651,7 @@ void fill_buffer_with_tickets(uint16_t ticket_count, uint64_t* tickets,
     char* current_pointer = buffer;
     for (uint16_t i = 0; i < ticket_count; i++) {
         resolve_a_single_ticket(single_ticket, tickets[i]);
-        print_single_ticket(single_ticket);
+//        print_single_ticket(single_ticket);
         fill_buffer_with_a_single_ticket(current_pointer, single_ticket);
         current_pointer += TICKET_OCT;
     }
@@ -670,11 +670,11 @@ void handle_client_message(Client_message from_client, char* message,
     Reservation* requested_reservation;
     int left_space;
 
-    printf("ID: %d ERR: %d \n", from_client.message_id, ERR_MESS_ID);
-    uint8_t meesage_id = from_client.message_id;
+//    printf("ID: %d ERR: %d \n", from_client.message_id, ERR_MESS_ID);
+    uint8_t message_id = from_client.message_id;
     char* current_pointer = message;
 
-    switch (meesage_id) {
+    switch (message_id) {
         case ERR_MESS_ID:
             if (from_client.ticket_count == ERR_EVENTS_TICK) {
                 length_to_send = MESS_ID_OCT + EVENT_ID_OCT;
@@ -690,7 +690,7 @@ void handle_client_message(Client_message from_client, char* message,
                 //send_message(socket_fd, client_address, message, length_to_send);
             }
             else if (from_client.ticket_count == ERR_RES) {
-                printf("RESE_ERR TICk %d ERR_res %d \n", from_client.ticket_count, ERR_RES);
+//                printf("RESE_ERR TICk %d ERR_res %d \n", from_client.ticket_count, ERR_RES);
                 length_to_send = MESS_ID_OCT + RES_ID_OCT;
 
                 current_pointer[0] = BAD_REQUEST;
@@ -767,10 +767,10 @@ void handle_client_message(Client_message from_client, char* message,
                 }
             }
 
-            printf("tickets seed %lu\n", *ticket_seed);
-            for (int i = 0; i < requested_reservation->ticket_count; i++) {
-                printf("%d t %lu\n", i, requested_reservation->ticket_ids[i]);
-            }
+//            printf("tickets seed %lu\n", *ticket_seed);
+//            for (int i = 0; i < requested_reservation->ticket_count; i++) {
+//                printf("%d t %lu\n", i, requested_reservation->ticket_ids[i]);
+//            }
 
             current_pointer[0] = TICKETS;
             current_pointer++;
@@ -781,16 +781,16 @@ void handle_client_message(Client_message from_client, char* message,
             uint16_t ticket_count = requested_reservation->ticket_count;
             *(uint16_t*)current_pointer = htons(ticket_count);
             current_pointer += 2;
-            char* to_check = current_pointer;
+//            char* to_check = current_pointer;
 
             fill_buffer_with_tickets(ticket_count,
                                      requested_reservation->ticket_ids,
                                      current_pointer);
 
-            for (int i = 0; i < TICKET_OCT*ticket_count; i++) {
-                printf("%c", to_check[i]);
-            }
-            printf("\n");
+//            for (int i = 0; i < TICKET_OCT*ticket_count; i++) {
+//                printf("%c", to_check[i]);
+//            }
+//            printf("\n");
 
             length_to_send = MESS_ID_OCT + RES_ID_OCT + TICK_COU_OCT
                             + TICKET_OCT*ticket_count;
@@ -804,10 +804,10 @@ void handle_client_message(Client_message from_client, char* message,
             int one_event_block_to_send;
             int desc_length;
 
-            printf("before mess %d curr %d\n", message[0], current_pointer[0]);
+//            printf("before mess %d curr %d\n", message[0], current_pointer[0]);
             current_pointer[0] = EVENTS;
             current_pointer++;
-            printf("after mess %d curr %d\n", message[0], current_pointer[0]);
+//            printf("after mess %d curr %d\n", message[0], current_pointer[0]);
 
             for (uint32_t i = 0; i < events->len; i++) {
                 current_event = events->arr[i];
@@ -820,7 +820,7 @@ void handle_client_message(Client_message from_client, char* message,
                 else {
                     *(uint32_t*)current_pointer = htonl(i);
                     current_pointer += 4;
-                    printf("inside mess %d curr %d\n", message[0], current_pointer[0]);
+//                    printf("inside mess %d curr %d\n", message[0], current_pointer[0]);
 
                     *(uint16_t*)current_pointer = htons(current_event.available_tickets);
                     current_pointer += 2;
@@ -839,15 +839,15 @@ void handle_client_message(Client_message from_client, char* message,
             length_to_send = UDP_MAX - left_space;
     }
 
-    printf("TO SEND\nmess_id %d\nlength %ld\nignore %d\n", message[0], length_to_send, to_be_ignored);
-    printf("messid %d resid %d tick %hu\n", message[0], ntohl(*(uint32_t*)(message + 1)), ntohs(*(uint16_t*)(message + 5)));
-    for (size_t i = 8; i < length_to_send; i++) {
-        printf("%c", message[i]);
-    }
-    printf("\n");
+//    printf("TO SEND\nmess_id %d\nlength %ld\nignore %d\n", message[0], length_to_send, to_be_ignored);
+//    printf("messid %d resid %d tick %hu\n", message[0], ntohl(*(uint32_t*)(message + 1)), ntohs(*(uint16_t*)(message + 5)));
+//    for (size_t i = 8; i < length_to_send; i++) {
+//        printf("%c", message[i]);
+//    }
+//    printf("\n");
 
     if (!to_be_ignored) {
-        printf("SENDING\n");
+//        printf("SENDING\n");
         send_message(socket_fd, client_address, message,
                      length_to_send);
     }
@@ -873,7 +873,7 @@ Client_message interpret_client_message(char* message, size_t received_length,
 //    printf("ntohl: %d\n", message_id_ntohl);
     if (message_id != GET_EVENTS && message_id != GET_RESERVATION
         && message_id != GET_TICKETS) return result_message;
-    printf("nopassed\n");
+//    printf("nopassed\n");
     char* current_pointer = message;
     current_pointer++;
 
@@ -887,7 +887,7 @@ Client_message interpret_client_message(char* message, size_t received_length,
             return result_message;
 
         case GET_RESERVATION:
-            printf("received length: %ld\n", received_length);
+//            printf("received length: %ld\n", received_length);
             if (received_length != (MESS_ID_OCT + EVENT_ID_OCT + TICK_COU_OCT))
                 return result_message;
 
@@ -918,11 +918,11 @@ Client_message interpret_client_message(char* message, size_t received_length,
             uint16_t tickets_count = ntohs(*(uint16_t*)current_pointer);
             current_pointer += 2;
 
-            printf("TICKETS %d\n", tickets_count);
-            printf("Before expired: %d\n", expiring->num_elements);
+//            printf("TICKETS %d\n", tickets_count);
+//            printf("Before expired: %d\n", expiring->num_elements);
             free_expired(events, expiring, reservs);
-            printf("after expired: %d\n", expiring->num_elements);
-            printf("AVAL TICK %d\n", events->arr[event_id].available_tickets);
+//            printf("after expired: %d\n", expiring->num_elements);
+//            printf("AVAL TICK %d\n", events->arr[event_id].available_tickets);
             if (tickets_count == 0 || events->arr[event_id].available_tickets
                 < tickets_count || UDP_MAX < (TICKET_OCT*tickets_count +
                 MESS_ID_OCT + RES_ID_OCT + TICK_COU_OCT)) {
@@ -930,7 +930,7 @@ Client_message interpret_client_message(char* message, size_t received_length,
 
                     return result_message;
             }
-            printf("AFTER AVAL TICK %d\n", events->arr[event_id].available_tickets);
+//            printf("AFTER AVAL TICK %d\n", events->arr[event_id].available_tickets);
 
 //            result_message.message_id |= message_id_ntohl;
             result_message.message_id = message_id;
@@ -952,7 +952,7 @@ Client_message interpret_client_message(char* message, size_t received_length,
             reservation_id -= RES_IND_BIAS;
 
             if (reservation_id >= reservs->last_index) {
-                printf("WRONG INDEX:\n");
+//                printf("WRONG INDEX:\n");
                 result_message.ticket_count = ERR_RES;
 
                 return result_message;
@@ -1017,10 +1017,11 @@ int main(int argc, char* argv[]) {
 	int port = PORT_DEF;
 
 	char* filename = read_options(argc, argv, &port, &timeout);
-	printf("FILENAME %s\n", filename);
+//	printf("FILENAME %s\n", filename);
     Event_array read_events = read_process_save_file_content(filename);
 //    print_events(read_events);
-    printf("Listening on port %d\n", port);
+
+//    printf("Listening on port %d\n", port);
 
     char message_buffer[UDP_MAX + 1];
     memset(message_buffer, 0, sizeof(message_buffer));
@@ -1041,20 +1042,22 @@ int main(int argc, char* argv[]) {
     do {
         read_length = read_message(socket_fd, &client_address,
                                    message_buffer, sizeof(message_buffer));
-        char* client_ip = inet_ntoa(client_address.sin_addr);
-        uint16_t client_port = ntohs(client_address.sin_port);
+//        char* client_ip = inet_ntoa(client_address.sin_addr);
+//        uint16_t client_port = ntohs(client_address.sin_port);
+
 //        message_buffer[read_length] = '\0';
-        printf("received %zd bytes from client %s:%u: '%.*s' |%c|\n",
-               read_length, client_ip, client_port,
-               (int) read_length, message_buffer, message_buffer[1 + RES_ID_OCT]); // note: we specify the length of the printed string
+
+//        printf("received %zd bytes from client %s:%u: '%.*s' |%c|\n",
+//               read_length, client_ip, client_port,
+//               (int) read_length, message_buffer, message_buffer[1 + RES_ID_OCT]); // note: we specify the length of the printed string
 
         Client_message received_message = interpret_client_message(message_buffer,
                                                                    read_length,
                                                                    &read_events,
                                                                    reservation_expiring,
                                                                    &reservations);
-        print_client_message(received_message);
-        printf("\n");
+//        print_client_message(received_message);
+//        printf("\n");
 
         handle_client_message(received_message, message_buffer, socket_fd,
                               &client_address, &reservations, (time_t)timeout,
