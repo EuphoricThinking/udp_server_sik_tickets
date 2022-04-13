@@ -236,7 +236,7 @@ bool is_number(char* arg_opt) {
 
 void test_whether_arg_is_passed(char* arg_opt, char* output) {
     if (!arg_opt) {
-        printf("No argument passed to %s\n", output);
+        fprintf(stderr,"No argument passed to %s\n", output);
 
         exit(1);
     }
@@ -248,7 +248,7 @@ void test_optional_initial_correct(char* arg_opt, char mode) {
     test_whether_arg_is_passed(arg_opt, output);
 
 	if (!is_number(arg_opt)) {
-		printf("%s should be passed as a numeric code\n", output);
+		fprintf(stderr,"%s should be passed as a numeric code\n", output);
                 exit(1);
 	}
 }
@@ -259,7 +259,7 @@ void test_optional_range(int* value, char mode) {
     int min_range = mode == TIME_OPT ? TIME_MIN : PORT_MIN;
 
     if (*value < min_range || *value > max_range) {
-        printf("%s should be included in "
+        fprintf(stderr,"%s should be included in "
                "range [%d, %d]\n", output, max_range, min_range);
         exit(1);
     }
@@ -270,10 +270,11 @@ char* read_options(int argc, char* argv[], int* port_number, int* timeout) {
 	char* filename = NULL;
 
 	while ((option = getopt(argc, argv, OPTSTRING)) != -1) {
-//		printf("READ: %c\n", option);
+		printf("READ: |%c|\n", option);
 		switch (option) {
 		case FILE_OPT:
             test_whether_arg_is_passed(optarg, FILE_ARG);
+            printf("After: %s\n", optarg);
 			filename = optarg;
 
 			break;
@@ -294,7 +295,7 @@ char* read_options(int argc, char* argv[], int* port_number, int* timeout) {
 			break;
 
 		default: /* ? */
-			printf("Unrecognized argument or no parameter passed"
+			fprintf(stderr, "Unrecognized argument or no parameter passed"
 				"\nUsage: ./test_service -f filename\n"
                 "Optional: -p port_number -t timeout\n");
 			exit(1);
@@ -357,6 +358,8 @@ Event_array read_process_save_file_content(char* path) {
     FILE* opened = fopen(path, "r");
     if (!opened) {
         perror(path);
+
+        exit(1);
     }
 
     char read_descr[DESC_LEN + 2];
@@ -1008,7 +1011,7 @@ void print_to_send(char* buffer) {
 }
 int main(int argc, char* argv[]) {
 	if (argc == 1) {
-		printf("Required arguments: -f filename\n"
+		fprintf(stderr, "Required arguments: -f filename\n"
                "Optional: -p port_number -t timeout\n");
 		exit(1);
 	}
