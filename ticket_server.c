@@ -919,6 +919,7 @@ Client_message interpret_client_message(char* message, size_t received_length,
             printf("TICKETS %d\n", tickets_count);
             free_expired(events, expiring, reservs);
             printf("after expired\n");
+            printf("AVAL TICK %d\n", events->arr[event_id].available_tickets);
             if (tickets_count == 0 || events->arr[event_id].available_tickets
                 < tickets_count || UDP_MAX < (TICKET_OCT*tickets_count +
                 MESS_ID_OCT + RES_ID_OCT + TICK_COU_OCT)) {
@@ -926,6 +927,7 @@ Client_message interpret_client_message(char* message, size_t received_length,
 
                     return result_message;
             }
+            printf("AFTER AVAL TICK %d\n", events->arr[event_id].available_tickets);
 
 //            result_message.message_id |= message_id_ntohl;
             result_message.message_id = message_id;
