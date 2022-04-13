@@ -493,13 +493,15 @@ void insert_new_reservation(Reservation_array* reservations, uint16_t ticket_cou
                             uint64_t* ticket_ids, time_t expiration, char* cookie,
                             uint32_t event_id) {
     printf("enter insert\n");
-    if (reservations->last_index >= reservations->size) {
-        size_t new_size = (reservations->size)*2 + sizeof(Reservation);
+    size_t* num_available_slots = &(reservations->num_available_slots);
+    if (reservations->last_index >= *num_available_slots) {
+        *num_available_slots = (*num_available_slots)*2 + 1;
+        size_t new_size = (*num_available_slots)*sizeof(Reservation);
         Reservation* new_array = realloc(reservations->arr, new_size);
         check_err_perror((new_array != NULL), "Error in extending reservations array");
 
         reservations->arr = new_array;
-        reservations->size = new_size;
+//        reservations->size = new_size;
     }
 
     Reservation new_reservation = create_reservation(ticket_count, ticket_ids,
