@@ -755,12 +755,12 @@ Client_message interpret_client_message(char* message, size_t received_length,
             uint32_t reservation_id = ntohl(*(uint32_t*)(message + 1));
             result_message.reservation_id = reservation_id;
 
-            Reservation requested_reservation = reservs->arr[reservation_id
-                                                             - RES_IND_BIAS];
+            Reservation* requested_reservation = &(reservs->arr[reservation_id
+                                                             - RES_IND_BIAS]);
             if (reservation_id >= reservs->last_index
-                || requested_reservation.expiration < time(NULL)
-                || (!requested_reservation.has_been_completed
-                && !are_cookies_identical(requested_reservation.cookie,
+                || requested_reservation->expiration < time(NULL)
+                || (!requested_reservation->has_been_completed
+                && !are_cookies_identical(requested_reservation->cookie,
                                            message + MESS_ID_OCT
                                            + RES_ID_OCT))) {
                     result_message.ticket_count = ERR_RES;
@@ -769,12 +769,14 @@ Client_message interpret_client_message(char* message, size_t received_length,
             }
 
 //            message[received_length] = '\0';
-            char* cookie = message + (1 + RES_ID_OCT); //does it work?
+//            char* cookie = message + (1 + RES_ID_OCT); //does it work?
 
             result_message.message_id = message_id;
 //            result_message.reservation_id = reservation_id;
 //            result_message.cookie = cookie;
 //            result_message.cookie = message;
+            if (!requested_reservation->has_been_completed)
+                requested_reservation->has_been_completed = true;
 
             return result_message;
     }
