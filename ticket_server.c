@@ -1,3 +1,7 @@
+//#define _BSD_SOURCE
+#define _DEFAULT_SOURCE
+#include <endian.h>
+
 #include <stdio.h>
 #include <unistd.h>
 #include <ctype.h>
@@ -12,7 +16,6 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <time.h>
-
 
 #define OPTSTRING "f:p:t:"
 #define PORT_MIN 0
@@ -523,7 +526,7 @@ void print_cookies(char* cookies) {
     printf("\n");
 }
 
-void print_client_message(Client_message clm, bool if_cookies) {
+void print_client_message(Client_message clm) {
     printf("mess : %d | event: %d | tick_count: %d | res: %d | cookie: "
            , clm.message_id, clm.event_id, clm.ticket_count, clm.reservation_id);
 //           clm.cookie);
@@ -722,7 +725,7 @@ void handle_client_message(Client_message from_client, char* message,
             current_pointer += COOKIE_OCT;
 
             time_t expiration_time = time(NULL) + timeout;
-            *(uint64_t*)current_pointer = htobe64(expiration_time);
+            *(uint64_t*)current_pointer = htobe64((uint64_t)expiration_time);
 
             send_message(socket_fd, client_address, message, length_to_send);
 
@@ -956,8 +959,6 @@ int main(int argc, char* argv[]) {
     srand(time(NULL));
     uint64_t ticket_seed = 0;
 
-#pragma clang diagnostic push
-#pragma ide diagnostic ignored "EndlessLoop"
     do {
         read_length = read_message(socket_fd, &client_address,
                                    message_buffer, sizeof(message_buffer));
@@ -973,7 +974,7 @@ int main(int argc, char* argv[]) {
                                                                    &read_events,
                                                                    reservation_expiring,
                                                                    &reservations);
-        print_client_message(received_message, false);
+        print_client_message(received_message);
         printf("\n");
 
         handle_client_message(received_message, message_buffer, socket_fd,
@@ -981,7 +982,6 @@ int main(int argc, char* argv[]) {
                               &ticket_seed, &read_events, reservation_expiring);
 
     } while (true); //(read_length > 0);
-#pragma clang diagnostic pop
 
     delete_event_array(read_events.arr, read_events.len);
     delete_queue(reservation_expiring);
