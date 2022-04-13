@@ -99,7 +99,7 @@ typedef struct Reservation {
 typedef struct Reservation_array {
     Reservation* arr;
     size_t last_index;
-    size_t size;
+    size_t num_available_slots;
 } Reservation_array;
 
 typedef struct Client_message {
@@ -484,7 +484,7 @@ Reservation_array create_res_array() {
     Reservation_array result;
     result.arr = NULL;
     result.last_index = 0;
-    result.size = 0;
+    result.num_available_slots = 0;
 
     return result;
 }
@@ -492,6 +492,7 @@ Reservation_array create_res_array() {
 void insert_new_reservation(Reservation_array* reservations, uint16_t ticket_count,
                             uint64_t* ticket_ids, time_t expiration, char* cookie,
                             uint32_t event_id) {
+    printf("enter insert\n");
     if (reservations->last_index >= reservations->size) {
         size_t new_size = (reservations->size)*2 + sizeof(Reservation);
         Reservation* new_array = realloc(reservations->arr, new_size);
@@ -505,6 +506,7 @@ void insert_new_reservation(Reservation_array* reservations, uint16_t ticket_cou
                                                      expiration, cookie,
                                                      event_id);
     reservations->arr[(reservations->last_index)++] = new_reservation;
+    printf("leave insert\n");
 }
 
 char* generate_cookie() {
@@ -885,6 +887,7 @@ Client_message interpret_client_message(char* message, size_t received_length,
 
             printf("TICKETS %d\n", tickets_count);
             free_expired(events, expiring, reservs);
+            printf("after expired\n");
             if (tickets_count == 0 || events->arr[event_id].available_tickets
                 < tickets_count || UDP_MAX < (TICKET_OCT*tickets_count +
                 MESS_ID_OCT + RES_ID_OCT + TICK_COU_OCT)) {
