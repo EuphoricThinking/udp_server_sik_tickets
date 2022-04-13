@@ -694,8 +694,8 @@ void handle_client_message(Client_message from_client, char* message,
 
         case GET_RESERVATION:
             cookie = generate_cookie();
-            length_to_send = MESS_ID_OCT + EVENT_ID_OCT + TICK_COU_OCT
-                    + COOKIE_OCT + EXP_TIME_OCT;
+            length_to_send = MESS_ID_OCT + EVENT_ID_OCT + RES_ID_OCT
+                    + TICK_COU_OCT + COOKIE_OCT + EXP_TIME_OCT;
 
             current_pointer[0] = RESERVATION;
             current_pointer++;
