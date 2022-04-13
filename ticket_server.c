@@ -575,7 +575,7 @@ void free_expired(Event_array* events, Queue* expiring, const Reservation_array 
     while (!is_empty(expiring)) {
         expiration = reservs->arr[top(expiring)->val].expiration;
 
-        if (expiration <= time(NULL)) {
+        if (expiration >= time(NULL)) {
             break;
         }
         else {
@@ -641,7 +641,8 @@ void handle_client_message(Client_message from_client, char* message,
                            int socket_fd,
                            const struct sockaddr_in *client_address,
                            Reservation_array* reservs, time_t timeout,
-                           uint64_t* ticket_seed, Event_array* events) {
+                           uint64_t* ticket_seed, Event_array* events,
+                           Queue* expiring) {
     size_t length_to_send;
 
     bool to_be_ignored = false;
@@ -715,6 +716,7 @@ void handle_client_message(Client_message from_client, char* message,
 
             requested_reservation = &(reservs->arr[(reservs->last_index) - 1]);
             requested_reservation->expiration = expiration_time;
+            
 
             Event* requested_event =
                     &(events->arr[from_client.event_id]);
@@ -816,6 +818,9 @@ Client_message interpret_client_message(char* message, size_t received_length,
     if (message_id != GET_EVENTS && message_id != GET_RESERVATION
         && message_id != GET_TICKETS) return result_message;
     printf("nopassed\n");
+    char* current_pointer = message;
+    current_pointer++;
+
     switch (message_id) {
         case GET_EVENTS:
             if (received_length > 1) return result_message;
@@ -833,12 +838,15 @@ Client_message interpret_client_message(char* message, size_t received_length,
 //            uint32_t event_id = ntohl(bitshift_to_retrieve_message(1,
 //                                                             EVENT_ID_OCT + 1,
 //                                                             message));
-            uint32_t event_id = ntohl(*(uint32_t*)(message + 1));
+//            uint32_t event_id = ntohl(*(uint32_t*)(message + 1));
+            uint32_t event_id = ntohl(*(uint32_t*)current_pointer);
+            current_pointer += 4;
+
             result_message.event_id = event_id;
 
-            char* ptr = message + 1;
-            uint32_t converted = *(uint32_t*)ptr;
-            printf("CONVERTED %d\n", converted);
+//            char* ptr = message + 1;
+//            uint32_t converted = *(uint32_t*)ptr;
+//            printf("CONVERTED %d\n", converted);
 
             if (event_id > (events->len - 1)) {
                 result_message.ticket_count = ERR_EVENTS_TICK;
@@ -846,11 +854,14 @@ Client_message interpret_client_message(char* message, size_t received_length,
                 return result_message;
             }
 
-            uint16_t tickets_count = 0;
-            int ticket_begin = 1 + EVENT_ID_OCT;
-            tickets_count = ntohs(tickets_count |= bitshift_to_retrieve_message(ticket_begin,
-                                                    ticket_begin + TICK_COU_OCT,
-                                                    message));
+//            uint16_t tickets_count = 0;
+//            int ticket_begin = 1 + EVENT_ID_OCT;
+//            tickets_count = ntohs(tickets_count |= bitshift_to_retrieve_message(ticket_begin,
+//                                                    ticket_begin + TICK_COU_OCT,
+//                                                    message));
+            uint16_t tickets_count = ntohs(*(uint16_t*)current_pointer);
+            current_pointer += 2;
+
             printf("TICKETS %d\n", tickets_count);
             free_expired(events, expiring, reservs);
             if (tickets_count == 0 || events->arr[event_id].available_tickets
@@ -863,7 +874,8 @@ Client_message interpret_client_message(char* message, size_t received_length,
 
 //            result_message.message_id |= message_id_ntohl;
             result_message.message_id = message_id;
-            result_message.ticket_count |= tickets_count;
+//            result_message.ticket_count |= tickets_count;
+            result_message.ticket_count = tickets_count;
 
             return result_message;
 
