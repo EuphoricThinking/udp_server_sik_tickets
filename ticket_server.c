@@ -256,7 +256,7 @@ void test_optional_range(int* value, char mode) {
     }
 }
 
-char* read_options(int argc, char* argv[], int* port_number, int* timeout) {
+char* read_options(int argc, char* argv[], int* port_number, time_t* timeout) {
 	int option;
 	char* filename = NULL;
 
@@ -594,7 +594,7 @@ void overwrite_buffer(char* cookie, char* message) {
 void handle_client_message(Client_message from_client, char* message,
                            int socket_fd,
                            const struct sockaddr_in *client_address,
-                           Reservation_array* reservs, ) {
+                           Reservation_array* reservs, time_t timeout) {
     size_t length_to_send;
 
     bool to_be_ignored = false;
@@ -658,7 +658,13 @@ void handle_client_message(Client_message from_client, char* message,
             overwrite_buffer(cookie, current_pointer);
             current_pointer += COOKIE_OCT;
 
-            time_t expiration_time
+            time_t expiration_time = time(NULL) + timeout;
+            *(uint64_t*)current_pointer = expiration_time;
+
+            send_message(socket_fd, client_address, message, length_to_send);
+
+            reservs->arr[(reservs->last_index) - 1].expiration = expiration_time;
+            to_be_ignored = true;
     }
 
     if (!to_be_ignored) send_message(socket_fd, client_address, message,
@@ -752,7 +758,7 @@ int main(int argc, char* argv[]) {
 		exit(1);
 	}
 
-	int timeout = TIME_DEF;
+	time_t timeout = TIME_DEF;
 	int port = PORT_DEF;
 
 	char* filename = read_options(argc, argv, &port, &timeout);
@@ -801,7 +807,7 @@ int main(int argc, char* argv[]) {
 
     delete_event_array(read_events.arr, read_events.len);
     delete_queue(reservation_expiring);
-    delete_reservations(reservations.arr, reservations.len);
+    delete_reservations(reservations.arr, reservations.last_index);
 
 	return 0;
 }
