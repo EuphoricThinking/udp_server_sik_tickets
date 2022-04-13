@@ -952,7 +952,7 @@ int main(int argc, char* argv[]) {
     struct sockaddr_in client_address;
 //    printf("BYTE ORDER%d\n'", __BYTE_ORDER == __LITTLE_ENDIAN);
     Queue* reservation_expiring = init_queue();
-    Reservation_array reservations;
+    Reservation_array reservations = create_res_array();
     srand(time(NULL));
     uint64_t ticket_seed = 0;
 
