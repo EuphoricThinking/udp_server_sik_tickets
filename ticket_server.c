@@ -581,8 +581,11 @@ void free_expired(Event_array* events, Queue* expiring, const Reservation_array 
         else {
             reservation = pop(expiring);
             Reservation cancelled = reservs->arr[reservation->val];
-            Event* event_to_add_tickets = &(events->arr[cancelled.event_id]);
-            event_to_add_tickets->available_tickets += cancelled.ticket_count;
+
+            if (!cancelled.has_been_completed) {
+                Event* event_to_add_tickets = &(events->arr[cancelled.event_id]);
+                event_to_add_tickets->available_tickets += cancelled.ticket_count;
+            }
 
             delete_node(reservation);
         }
@@ -955,7 +958,8 @@ int main(int argc, char* argv[]) {
         printf("\n");
 
         handle_client_message(received_message, message_buffer, socket_fd,
-                              &client_address, &reservations, timeout);
+                              &client_address, &reservations, timeout,
+                              &ticket_seed, &read_events);
 
     } while (true); //(read_length > 0);
 #pragma clang diagnostic pop
