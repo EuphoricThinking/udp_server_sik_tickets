@@ -805,7 +805,7 @@ int main(int argc, char* argv[]) {
         handle_client_message(received_message, message_buffer, socket_fd,
                               &client_address);
 
-    } while (read_length > 0);
+    } while (true); //(read_length > 0);
 
     delete_event_array(read_events.arr, read_events.len);
     delete_queue(reservation_expiring);
