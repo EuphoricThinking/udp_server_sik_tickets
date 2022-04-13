@@ -270,11 +270,11 @@ char* read_options(int argc, char* argv[], int* port_number, int* timeout) {
 	char* filename = NULL;
 
 	while ((option = getopt(argc, argv, OPTSTRING)) != -1) {
-		printf("READ: |%c|\n", option);
+//		printf("READ: |%d|\n", option);
 		switch (option) {
 		case FILE_OPT:
             test_whether_arg_is_passed(optarg, FILE_ARG);
-            printf("After: %s\n", optarg);
+//            printf("After: %s\n", optarg);
 			filename = optarg;
 
 			break;
@@ -301,6 +301,13 @@ char* read_options(int argc, char* argv[], int* port_number, int* timeout) {
 			exit(1);
 		}
 	}
+//    printf("after all %s\n", argv[optind]);
+    if (argv[optind]) {
+        fprintf(stderr, "Incorrect flag option"
+                        "\nUsage: ./test_service -f filename\n"
+                        "Optional: -p port_number -t timeout\n");
+        exit(1);
+    }
 
 	return filename;
 }
