@@ -589,8 +589,8 @@ void free_expired(Event_array* events, Queue* expiring, const Reservation_array 
     }
 }
 
-void overwrite_buffer(char* cookie, char* message) {
-    for (int i = 0; i < COOKIE_OCT; i++) {
+void overwrite_buffer(char* cookie, char* message, int limit) {
+    for (int i = 0; i < limit; i++) {
         message[i] = cookie[i];
     }
 }
@@ -697,7 +697,7 @@ void handle_client_message(Client_message from_client, char* message,
             *(uint16_t*)current_pointer = htons(from_client.ticket_count);
             current_pointer += 2;
 
-            overwrite_buffer(cookie, current_pointer);
+            overwrite_buffer(cookie, current_pointer, COOKIE_OCT);
             current_pointer += COOKIE_OCT;
 
             time_t expiration_time = time(NULL) + timeout;
@@ -752,6 +752,7 @@ void handle_client_message(Client_message from_client, char* message,
             Event current_event;
             int constant_block = EVENT_ID_OCT + TICK_COU_OCT + DESC_LEN_OCT;
             int one_event_block_to_send;
+            int desc_length;
 
             current_pointer[0] = EVENTS;
 
@@ -770,10 +771,14 @@ void handle_client_message(Client_message from_client, char* message,
                     *(uint16_t*)current_pointer = htons(current_event.available_tickets);
                     current_pointer += 2;
 
-                    *current_pointer = current_event.description_octets;
+                    desc_length = current_event.description_octets;
+                    *current_pointer = desc_length;
                     current_pointer++;
 
-                    
+                    overwrite_buffer(current_event.description,
+                                     current_pointer, desc_length);
+                    current_pointer += desc_length;
+                    left_space -= one_event_block_to_send;
                 }
             }
     }
