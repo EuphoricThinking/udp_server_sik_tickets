@@ -632,7 +632,8 @@ void fill_buffer_with_tickets(uint16_t ticket_count, uint64_t* tickets,
 void handle_client_message(Client_message from_client, char* message,
                            int socket_fd,
                            const struct sockaddr_in *client_address,
-                           Reservation_array* reservs, time_t timeout) {
+                           Reservation_array* reservs, time_t timeout,
+                           uint64_t* ticket_seed, Event_array* events) {
     size_t length_to_send;
 
     bool to_be_ignored = false;
@@ -703,13 +704,41 @@ void handle_client_message(Client_message from_client, char* message,
 
             send_message(socket_fd, client_address, message, length_to_send);
 
-            reservs->arr[(reservs->last_index) - 1].expiration = expiration_time;
+            requested_reservation = &(reservs->arr[(reservs->last_index) - 1]);
+            requested_reservation->expiration = expiration_time;
+
+            Event* requested_event =
+                    &(events->arr[from_client.event_id]);
+            requested_event->available_tickets -= from_client.ticket_count;
+
             to_be_ignored = true;
 
             break;
 
         case GET_TICKETS:
-            = reser
+            requested_reservation =
+                    &(reservs->arr[from_client.reservation_id - RES_IND_BIAS]);
+
+            if (!(requested_reservation->ticket_ids)) {
+                requested_reservation->ticket_ids =
+                    malloc(sizeof(uint64_t)*requested_reservation->ticket_count);
+
+                check_err_perror((requested_reservation->ticket_ids != NULL),
+                                 "Error while assigning the tickets");
+
+                for (int i = 0; i < requested_reservation->ticket_count; i++) {
+                    requested_reservation->ticket_ids[i] = *(ticket_seed)++;
+                }
+            }
+
+            message[0] = TICKETS;
+            message++;
+
+            *(uint32_t*)message = htonl(from_client.reservation_id + RES_IND_BIAS);
+            message += 4;
+
+            *(uint16_t*)message = htons(from_client.ticket_count);
+            message += 2;
     }
 
     if (!to_be_ignored) send_message(socket_fd, client_address, message,
