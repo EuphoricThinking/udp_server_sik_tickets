@@ -758,11 +758,11 @@ Client_message interpret_client_message(char* message, size_t received_length,
             Reservation* requested_reservation = &(reservs->arr[reservation_id
                                                              - RES_IND_BIAS]);
             if (reservation_id >= reservs->last_index
-                || requested_reservation->expiration < time(NULL)
                 || (!requested_reservation->has_been_completed
-                && !are_cookies_identical(requested_reservation->cookie,
+                && requested_reservation->expiration < time(NULL))
+                || !are_cookies_identical(requested_reservation->cookie,
                                            message + MESS_ID_OCT
-                                           + RES_ID_OCT))) {
+                                           + RES_ID_OCT)) {
                     result_message.ticket_count = ERR_RES;
 
                     return result_message;
