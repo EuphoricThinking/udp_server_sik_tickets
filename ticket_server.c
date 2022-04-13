@@ -887,7 +887,9 @@ Client_message interpret_client_message(char* message, size_t received_length,
 
 //            uint32_t reservation_id = ntohl(bitshift_to_retrieve_message(
 //                    1, 1 + RES_ID_OCT, message));
-            uint32_t reservation_id = ntohl(*(uint32_t*)(message + 1));
+//            uint32_t reservation_id = ntohl(*(uint32_t*)(message + 1));
+            uint32_t reservation_id = ntohl(*(uint32_t*)current_pointer);
+            current_pointer += 4;
             result_message.reservation_id = reservation_id;
 
             Reservation* requested_reservation = &(reservs->arr[reservation_id
