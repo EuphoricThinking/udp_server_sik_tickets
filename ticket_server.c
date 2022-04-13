@@ -68,6 +68,9 @@
 
 #define RES_IND_BIAS    1000000
 
+#define DIGIT_ASCII_START   (uint8_t)48
+#define LETTER_ASCII_START  (uint8_t)55 //subtracted bias
+
 typedef struct Event {
     char* description;
 //    uint8_t text_length;
@@ -591,6 +594,37 @@ void overwrite_buffer(char* cookie, char* message) {
     }
 }
 
+uint8_t determine_char(uint8_t byte) {
+    if (byte < 10) {
+        return byte + DIGIT_ASCII_START;
+    }
+    else {
+        return byte + LETTER_ASCII_START;
+    }
+}
+
+void fill_buffer_with_a_single_ticket(char* buffer, uint64_t ticket) {
+    uint8_t temp_char = 0;
+    for (int i = 0; i < TICKET_OCT; i++ ){
+        temp_char |= ticket;
+        buffer[i] = determine_char(temp_char);
+
+        temp_char = 0;
+        if (i != (TICKET_OCT - 1)) ticket >> 8;
+    }
+}
+
+void resolve_a_single_ticket(char[] storage, )
+void fill_buffer_with_tickets(uint16_t ticket_count, uint64_t* tickets,
+                              char* buffer) {
+    uint64_t single_ticket[TICKET_OCT];
+
+    for (uint16_t i = 0; i < ticket_count; i++) {
+        fill_buffer_with_a_single_ticket(buffer, tickets[i]);
+        buffer += TICKET_OCT;
+    }
+}
+
 void handle_client_message(Client_message from_client, char* message,
                            int socket_fd,
                            const struct sockaddr_in *client_address,
@@ -814,6 +848,7 @@ int main(int argc, char* argv[]) {
     Queue* reservation_expiring = init_queue();
     Reservation_array reservations;
     srand(time(NULL));
+    uint64_t ticket_seed = 0;
 
 #pragma clang diagnostic push
 #pragma ide diagnostic ignored "EndlessLoop"
