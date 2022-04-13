@@ -89,7 +89,8 @@ typedef struct Reservation {
 
 typedef struct Reservation_array {
     Reservation* arr;
-    size_t len;
+    size_t last_index;
+    size_t size;
 } Reservation_array;
 
 typedef struct Client_message {
@@ -472,6 +473,33 @@ void delete_reservations(Reservation* arr, size_t len) {
     free(arr);
 }
 
+Reservation_array create_res_array() {
+    Reservation_array result;
+    result.arr = NULL;
+    result.last_index = 0;
+    result.size = 0;
+
+    return result;
+}
+
+void insert_new_reservation(Reservation_array* reservations, uint16_t ticket_count,
+                            uint64_t* ticket_ids, time_t expiration, char* cookie,
+                            uint32_t event_id) {
+    if (reservations->last_index >= reservations->size) {
+        size_t new_size = reservations->size*2 + 1;
+        Reservation* new_array = realloc(reservations->arr, new_size);
+        check_err_perror((new_array != NULL), "Error in extending reseravtions array");
+
+        reservations->arr = new_array;
+        reservations->size = new_size;
+    }
+
+    Reservation new_reservation = create_reservation(ticket_count, ticket_ids,
+                                                     expiration, cookie,
+                                                     event_id);
+    reservations->arr[(reservations->last_index)++] = new_reservation;
+}
+
 char* generate_cookie() {
     char* sweet_cookie = malloc(COOKIE_OCT);
 
@@ -557,15 +585,26 @@ void free_expired(Event_array* events, Queue* expiring, const Reservation_array 
     }
 }
 
+void overwrite_buffer(char* cookie, char* message) {
+    for (int i = 0; i < COOKIE_OCT; i++) {
+        message[i] = cookie[i];
+    }
+}
+
 void handle_client_message(Client_message from_client, char* message,
                            int socket_fd,
-                           const struct sockaddr_in *client_address) {
+                           const struct sockaddr_in *client_address,
+                           Reservation_array* reservs, ) {
     size_t length_to_send;
 
     bool to_be_ignored = false;
+    char* cookie;
 
     printf("ID: %d ERR: %d \n", from_client.message_id, ERR_MESS_ID);
-    switch (from_client.message_id) {
+    uint8_t meesage_id = from_client.message_id;
+    char* current_pointer = message;
+
+    switch (meesage_id) {
         case ERR_MESS_ID:
             if (from_client.ticket_count == ERR_EVENTS_TICK) {
                 length_to_send = MESS_ID_OCT + EVENT_ID_OCT;
@@ -597,8 +636,29 @@ void handle_client_message(Client_message from_client, char* message,
             break; //incorrect length etc. - simply skip
 
         case GET_RESERVATION:
+            cookie = generate_cookie();
+            length_to_send = MESS_ID_OCT + EVENT_ID_OCT + TICK_COU_OCT
+                    + COOKIE_OCT + EXP_TIME_OCT;
 
+            message[0] = RESERVATION;
+            current_pointer++;
 
+            insert_new_reservation(reservs, from_client.ticket_count,
+                                   NULL, 0, cookie,
+                                   from_client.event_id);
+            *(uint32_t*)current_pointer = htonl((reservs->last_index) - 1);
+            current_pointer += 4;
+
+            *(uint32_t*)current_pointer = htonl(from_client.event_id);
+            current_pointer += 4;
+
+            *(uint16_t*)current_pointer = htons(from_client.ticket_count);
+            current_pointer += 2;
+
+            overwrite_buffer(cookie, current_pointer);
+            current_pointer += COOKIE_OCT;
+
+            time_t expiration_time
     }
 
     if (!to_be_ignored) send_message(socket_fd, client_address, message,
