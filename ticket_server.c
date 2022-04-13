@@ -732,13 +732,19 @@ void handle_client_message(Client_message from_client, char* message,
             }
 
             message[0] = TICKETS;
-            message++;
+            current_pointer++;
 
-            *(uint32_t*)message = htonl(from_client.reservation_id + RES_IND_BIAS);
-            message += 4;
+            *(uint32_t*)current_pointer = htonl(from_client.reservation_id + RES_IND_BIAS);
+            current_pointer += 4;
 
-            *(uint16_t*)message = htons(from_client.ticket_count);
-            message += 2;
+            *(uint16_t*)current_pointer = htons(from_client.ticket_count);
+            current_pointer += 2;
+
+            fill_buffer_with_tickets(requested_reservation->ticket_count,
+                                     requested_reservation->ticket_ids,
+                                     current_pointer);
+
+            break;
     }
 
     if (!to_be_ignored) send_message(socket_fd, client_address, message,
