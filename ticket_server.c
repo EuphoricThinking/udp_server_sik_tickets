@@ -633,12 +633,20 @@ void resolve_a_single_ticket(uint8_t storage[], uint64_t single_ticket) {
     }
 }
 
+void print_single_ticket(uint8_t ticket[]) {
+    for (int i = 0; i < TICKET_OCT; i++) {
+        printf("|%c%d|", ticket[i], ticket[i]);
+    }
+    printf("\n");
+}
+
 void fill_buffer_with_tickets(uint16_t ticket_count, uint64_t* tickets,
                               char* buffer) {
     uint8_t single_ticket[TICKET_OCT];
     char* current_pointer = buffer;
     for (uint16_t i = 0; i < ticket_count; i++) {
         resolve_a_single_ticket(single_ticket, tickets[i]);
+        print_single_ticket(single_ticket);
         fill_buffer_with_a_single_ticket(current_pointer, single_ticket);
         current_pointer += TICKET_OCT;
     }
