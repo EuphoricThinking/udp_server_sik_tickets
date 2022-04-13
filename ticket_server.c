@@ -915,6 +915,7 @@ Client_message interpret_client_message(char* message, size_t received_length,
             uint32_t reservation_id = ntohl(*(uint32_t*)current_pointer);
             current_pointer += 4;
             result_message.reservation_id = reservation_id;
+            reservation_id -= RES_IND_BIAS;
 
             Reservation* requested_reservation = &(reservs->arr[reservation_id
                                                              - RES_IND_BIAS]);
@@ -924,6 +925,9 @@ Client_message interpret_client_message(char* message, size_t received_length,
                 || !are_cookies_identical(requested_reservation->cookie,
                                            message + MESS_ID_OCT
                                            + RES_ID_OCT)) {
+                    if (reservation_id >= reservs->last_index) {
+                        printf("WRONG INDEX:\n");
+                    }
                     result_message.ticket_count = ERR_RES;
 
                     return result_message;
