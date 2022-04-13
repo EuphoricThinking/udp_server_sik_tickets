@@ -750,8 +750,13 @@ void handle_client_message(Client_message from_client, char* message,
                                  "Error while assigning the tickets");
 
                 for (int i = 0; i < requested_reservation->ticket_count; i++) {
-                    requested_reservation->ticket_ids[i] = *(ticket_seed)++;
+                    requested_reservation->ticket_ids[i] = (*ticket_seed)++;
                 }
+            }
+
+            printf("tickets seed %lu\n", *ticket_seed);
+            for (int i = 0; i < requested_reservation->ticket_count; i++) {
+                printf("%d t %lu\n", i, requested_reservation->ticket_ids[i]);
             }
 
             current_pointer[0] = TICKETS;
@@ -768,7 +773,7 @@ void handle_client_message(Client_message from_client, char* message,
                                      requested_reservation->ticket_ids,
                                      current_pointer);
 
-            length_to_send = MESS_ID_OCT + RES_ID_OCT + TICK_COU_OCT*ticket_count;
+            length_to_send = MESS_ID_OCT + RES_ID_OCT + TICKET_OCT*ticket_count;
 
             break;
 
@@ -925,6 +930,7 @@ Client_message interpret_client_message(char* message, size_t received_length,
             }
 
             Reservation* requested_reservation = &(reservs->arr[reservation_id]);
+
             if ((!requested_reservation->has_been_completed
                 && requested_reservation->expiration < time(NULL))
                 || !are_cookies_identical(requested_reservation->cookie,
