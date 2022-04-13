@@ -615,9 +615,12 @@ uint8_t determine_char(uint8_t byte) {
 }
 
 void fill_buffer_with_a_single_ticket(char* buffer, uint8_t ticket[]) {
+    printf("single fragment buffer\n");
     for (int i = 0; i < TICKET_OCT; i++ ){
         buffer[i] = determine_char(ticket[i]);
+        printf("%c", buffer[i]);
     }
+    printf("\n");
 }
 
 void resolve_a_single_ticket(uint8_t storage[], uint64_t single_ticket) {
@@ -776,12 +779,19 @@ void handle_client_message(Client_message from_client, char* message,
             uint16_t ticket_count = requested_reservation->ticket_count;
             *(uint16_t*)current_pointer = htons(ticket_count);
             current_pointer += 2;
+            char* to_check = current_pointer;
 
             fill_buffer_with_tickets(ticket_count,
                                      requested_reservation->ticket_ids,
                                      current_pointer);
 
-            length_to_send = MESS_ID_OCT + RES_ID_OCT + TICKET_OCT*ticket_count;
+            for (int i = 0; i < TICKET_OCT*ticket_count; i++) {
+                printf("%c", to_check[i]);
+            }
+            printf("\n");
+
+            length_to_send = MESS_ID_OCT + RES_ID_OCT + TICK_COU_OCT
+                            + TICKET_OCT*ticket_count;
 
             break;
 
@@ -828,6 +838,12 @@ void handle_client_message(Client_message from_client, char* message,
     }
 
     printf("TO SEND\nmess_id %d\nlength %ld\nignore %d\n", message[0], length_to_send, to_be_ignored);
+    printf("messid %d resid %d tick %hu\n", message[0], ntohl(*(uint32_t*)(message + 1)), ntohs(*(uint16_t*)(message + 5)));
+    for (size_t i = 8; i < length_to_send; i++) {
+        printf("%c", message[i]);
+    }
+    printf("\n");
+
     if (!to_be_ignored) {
         printf("SENDING\n");
         send_message(socket_fd, client_address, message,
