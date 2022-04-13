@@ -659,7 +659,7 @@ void handle_client_message(Client_message from_client, char* message,
             current_pointer += COOKIE_OCT;
 
             time_t expiration_time = time(NULL) + timeout;
-            *(uint64_t*)current_pointer = expiration_time;
+            *(uint64_t*)current_pointer = htobe64(expiration_time);
 
             send_message(socket_fd, client_address, message, length_to_send);
 
@@ -784,6 +784,8 @@ int main(int argc, char* argv[]) {
     Reservation_array reservations;
     srand(time(NULL));
 
+#pragma clang diagnostic push
+#pragma ide diagnostic ignored "EndlessLoop"
     do {
         read_length = read_message(socket_fd, &client_address,
                                    message_buffer, sizeof(message_buffer));
@@ -803,9 +805,10 @@ int main(int argc, char* argv[]) {
         printf("\n");
 
         handle_client_message(received_message, message_buffer, socket_fd,
-                              &client_address);
+                              &client_address, &reservations, timeout);
 
     } while (true); //(read_length > 0);
+#pragma clang diagnostic pop
 
     delete_event_array(read_events.arr, read_events.len);
     delete_queue(reservation_expiring);
