@@ -612,9 +612,14 @@ void fill_buffer_with_a_single_ticket(char* buffer, uint8_t ticket[]) {
 
 void resolve_a_single_ticket(uint8_t storage[], uint64_t single_ticket) {
     int index = TICKET_OCT - 1;
-    while (single_ticket != 0) {
-        storage[index--] = (uint8_t)(single_ticket % BASE_TICK_CONVERT);
-        single_ticket /= BASE_TICK_CONVERT;
+    while (index >= 0) {
+        if (single_ticket != 0) {
+            storage[index--] = (uint8_t) (single_ticket % BASE_TICK_CONVERT);
+            single_ticket /= BASE_TICK_CONVERT;
+        }
+        else {
+            storage[index--] = single_ticket;
+        }
     }
 }
 
