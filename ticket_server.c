@@ -924,8 +924,7 @@ Client_message interpret_client_message(char* message, size_t received_length,
                 return result_message;
             }
 
-            Reservation* requested_reservation = &(reservs->arr[reservation_id
-                                                             - RES_IND_BIAS]);
+            Reservation* requested_reservation = &(reservs->arr[reservation_id]);
             if ((!requested_reservation->has_been_completed
                 && requested_reservation->expiration < time(NULL))
                 || !are_cookies_identical(requested_reservation->cookie,
