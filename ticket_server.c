@@ -92,6 +92,7 @@ typedef struct Reservation {
     uint64_t* ticket_ids;
     time_t expiration;
     bool has_been_completed;
+    bool once_returned;
     char* cookie;
     uint32_t event_id;
 } Reservation;
@@ -465,6 +466,7 @@ Reservation create_reservation(uint16_t ticket_count, uint64_t* ticket_ids,
     initial_reservation.ticket_ids = ticket_ids;
     initial_reservation.expiration = expiration;
     initial_reservation.has_been_completed = false;
+    initial_reservation.once_returned = false;
     initial_reservation.cookie = cookie;
     initial_reservation.event_id = event_id;
 
@@ -589,7 +591,7 @@ void free_expired(Event_array* events, Queue* expiring, const Reservation_array 
             reservation = pop(expiring);
             Reservation cancelled = reservs->arr[reservation->val];
 
-            if (!cancelled.has_been_completed) {
+            if (!cancelled.has_been_completed && !cancelled.once_returned) { //TODO      //TODO Added cancelled.once_returned
                 Event* event_to_add_tickets = &(events->arr[cancelled.event_id]);
                 event_to_add_tickets->available_tickets += cancelled.ticket_count;
             }
@@ -956,12 +958,19 @@ Client_message interpret_client_message(char* message, size_t received_length,
             }
 
             Reservation* requested_reservation = &(reservs->arr[reservation_id]);
+            bool is_late = (!requested_reservation->has_been_completed
+                            && requested_reservation->expiration < time(NULL));
 
-            if ((!requested_reservation->has_been_completed
-                && requested_reservation->expiration < time(NULL))
-                || !are_cookies_identical(requested_reservation->cookie,
-                                           message + MESS_ID_OCT
-                                           + RES_ID_OCT)) {
+            if (is_late || !are_cookies_identical(requested_reservation->cookie,
+                               message + MESS_ID_OCT + RES_ID_OCT)) {
+                    if (is_late && !requested_reservation->once_returned) {
+                        requested_reservation->once_returned = true;
+                        Event* event_to_add_tickets =
+                                &(events->arr[requested_reservation->event_id]);
+                        event_to_add_tickets->available_tickets +=
+                                requested_reservation->ticket_count;
+                    }
+
                     result_message.ticket_count = ERR_RES;
 
                     return result_message;
