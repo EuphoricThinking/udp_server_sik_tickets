@@ -604,21 +604,16 @@ uint8_t determine_char(uint8_t byte) {
     }
 }
 
-void fill_buffer_with_a_single_ticket(char* buffer, uint64_t ticket) {
-    uint8_t temp_char = 0;
+void fill_buffer_with_a_single_ticket(char* buffer, uint8_t ticket[]) {
     for (int i = 0; i < TICKET_OCT; i++ ){
-        temp_char |= ticket;
-        buffer[i] = determine_char(temp_char);
-
-        temp_char = 0;
-        if (i != (TICKET_OCT - 1)) ticket >> 8;
+        buffer[i] = determine_char(ticket[i]);
     }
 }
 
-void resolve_a_single_ticket(uint32_t storage[], uint64_t single_ticket) {
+void resolve_a_single_ticket(uint8_t storage[], uint64_t single_ticket) {
     int index = TICKET_OCT - 1;
     while (single_ticket != 0) {
-        storage[index--] = single_ticket % BASE_TICK_CONVERT;
+        storage[index--] = (uint8_t)(single_ticket % BASE_TICK_CONVERT);
         single_ticket /= BASE_TICK_CONVERT;
     }
 }
@@ -626,10 +621,11 @@ void resolve_a_single_ticket(uint32_t storage[], uint64_t single_ticket) {
 void fill_buffer_with_tickets(uint16_t ticket_count, uint64_t* tickets,
                               char* buffer) {
     uint8_t single_ticket[TICKET_OCT];
-
+    char* curent_pointer = buffer;
     for (uint16_t i = 0; i < ticket_count; i++) {
-        fill_buffer_with_a_single_ticket(buffer, tickets[i]);
-        buffer += TICKET_OCT;
+        resolve_a_single_ticket(single_ticket, tickets[i]);
+        fill_buffer_with_a_single_ticket(buffer, single_ticket);
+        curent_pointer += TICKET_OCT;
     }
 }
 
@@ -641,6 +637,7 @@ void handle_client_message(Client_message from_client, char* message,
 
     bool to_be_ignored = false;
     char* cookie;
+    Reservation* requested_reservation;
 
     printf("ID: %d ERR: %d \n", from_client.message_id, ERR_MESS_ID);
     uint8_t meesage_id = from_client.message_id;
@@ -710,6 +707,9 @@ void handle_client_message(Client_message from_client, char* message,
             to_be_ignored = true;
 
             break;
+
+        case GET_TICKETS:
+            = reser
     }
 
     if (!to_be_ignored) send_message(socket_fd, client_address, message,
