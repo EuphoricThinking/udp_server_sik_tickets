@@ -775,7 +775,10 @@ void handle_client_message(Client_message from_client, char* message,
             int one_event_block_to_send;
             int desc_length;
 
+            printf("before mess %d curr %d\n", message[0], current_pointer[0]);
             current_pointer[0] = EVENTS;
+            current_pointer++;
+            printf("after mess %d curr %d\n", message[0], current_pointer[0]);
 
             for (uint32_t i = 0; i < events->len; i++) {
                 current_event = events->arr[i];
@@ -788,6 +791,7 @@ void handle_client_message(Client_message from_client, char* message,
                 else {
                     *(uint32_t*)current_pointer = htonl(i);
                     current_pointer += 4;
+                    printf("inside mess %d curr %d\n", message[0], current_pointer[0]);
 
                     *(uint16_t*)current_pointer = htons(current_event.available_tickets);
                     current_pointer += 2;
@@ -806,9 +810,12 @@ void handle_client_message(Client_message from_client, char* message,
             length_to_send = UDP_MAX - left_space;
     }
 
-    printf("TO SEND\nmess_id %d\nlength %ld\n", meesage_id, length_to_send);
-    if (!to_be_ignored) send_message(socket_fd, client_address, message,
-                                     length_to_send);
+    printf("TO SEND\nmess_id %d\nlength %ld\nignore %d\n", message[0], length_to_send, to_be_ignored);
+    if (!to_be_ignored) {
+        printf("SENDING\n");
+        send_message(socket_fd, client_address, message,
+                     length_to_send);
+    }
 }
 
 bool are_cookies_identical(char* original_cookie, char* received_cookie) {
