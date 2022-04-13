@@ -646,7 +646,7 @@ void handle_client_message(Client_message from_client, char* message,
                            Reservation_array* reservs, time_t timeout,
                            uint64_t* ticket_seed, Event_array* events,
                            Queue* expiring) {
-    size_t length_to_send;
+    size_t length_to_send = 0;
 
     bool to_be_ignored = false;
     char* cookie;
@@ -756,12 +756,15 @@ void handle_client_message(Client_message from_client, char* message,
             *(uint32_t*)current_pointer = htonl(from_client.reservation_id); //+ RES_IND_BIAS);
             current_pointer += 4;
 
-            *(uint16_t*)current_pointer = htons(from_client.ticket_count);
+            uint16_t ticket_count = requested_reservation->ticket_count;
+            *(uint16_t*)current_pointer = htons(ticket_count);
             current_pointer += 2;
 
-            fill_buffer_with_tickets(requested_reservation->ticket_count,
+            fill_buffer_with_tickets(ticket_count,
                                      requested_reservation->ticket_ids,
                                      current_pointer);
+
+            length_to_send = MESS_ID_OCT + RES_ID_OCT + TICK_COU_OCT*ticket_count;
 
             break;
 
@@ -799,8 +802,11 @@ void handle_client_message(Client_message from_client, char* message,
                     left_space -= one_event_block_to_send;
                 }
             }
+
+            length_to_send = UDP_MAX - left_space;
     }
 
+    printf("TO SEND\nmess_id %d\nlength %ld\n", meesage_id, length_to_send);
     if (!to_be_ignored) send_message(socket_fd, client_address, message,
                                      length_to_send);
 }
@@ -927,6 +933,19 @@ Client_message interpret_client_message(char* message, size_t received_length,
     return result_message;
 }
 
+void print_to_send(char* buffer) {
+    uint8_t mess_id = *buffer;
+    char* current_pointer = buffer;
+    current_pointer++;
+
+    printf("TO SEND:\nmess_id: %d\n", mess_id);
+    switch (mess_id) {
+        case BAD_REQUEST:
+            printf("EV/RES ERR %d\n", *(uint32_t*)current_pointer);
+
+            break;
+    }
+}
 int main(int argc, char* argv[]) {
 	if (argc == 1) {
 		printf("Required arguments: -f filename\n"
