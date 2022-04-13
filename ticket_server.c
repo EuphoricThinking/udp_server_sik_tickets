@@ -917,17 +917,20 @@ Client_message interpret_client_message(char* message, size_t received_length,
             result_message.reservation_id = reservation_id;
             reservation_id -= RES_IND_BIAS;
 
+            if (reservation_id >= reservs->last_index) {
+                printf("WRONG INDEX:\n");
+                result_message.ticket_count = ERR_RES;
+
+                return result_message;
+            }
+
             Reservation* requested_reservation = &(reservs->arr[reservation_id
                                                              - RES_IND_BIAS]);
-            if (reservation_id >= reservs->last_index
-                || (!requested_reservation->has_been_completed
+            if ((!requested_reservation->has_been_completed
                 && requested_reservation->expiration < time(NULL))
                 || !are_cookies_identical(requested_reservation->cookie,
                                            message + MESS_ID_OCT
                                            + RES_ID_OCT)) {
-                    if (reservation_id >= reservs->last_index) {
-                        printf("WRONG INDEX:\n");
-                    }
                     result_message.ticket_count = ERR_RES;
 
                     return result_message;
