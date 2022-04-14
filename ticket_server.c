@@ -561,27 +561,11 @@ void print_client_message(Client_message clm) {
            , clm.message_id, clm.event_id, clm.ticket_count, clm.reservation_id);
 }
 
-uint32_t bitshift_to_retrieve_message(int begining, int end, char* message) {
-    uint32_t result = 0;
-    for (int i = begining; i < end; i++) {
-        result |= ((uint32_t) message[i] << 8*(i - begining));
-    }
-    return result;
-}
-
 /*
- * uint32_t event_id = 0;
-            for (int i = 1; i <= EVENT_ID_OCT; i++) {
-                event_id |= ((uint32_t) message[i] << 8*(i - 1));
-            }
-
-            uint16_t ticket_count = 0;
-            for (int i = 2 + EVENT_ID_OCT; i <= 1 + EVENT_ID_OCT + TICK_COU_OCT;
-                i++) {
-                ticket_count |= ((uint32_t))
-            }
+ * Code example from lab
  */
-void send_message(int socket_fd, const struct sockaddr_in *client_address, const char *message, size_t length) {
+void send_message(int socket_fd, const struct sockaddr_in *client_address,
+                    const char *message, size_t length) {
     socklen_t address_length = (socklen_t) sizeof(*client_address);
     int flags = 0;
     ssize_t sent_length = sendto(socket_fd, message, length, flags,
@@ -589,6 +573,9 @@ void send_message(int socket_fd, const struct sockaddr_in *client_address, const
     check_err_perror((sent_length == (ssize_t) length),
                      "Error while sending from server");
 }
+/*
+ * End of lab code
+ */
 
 void fill_buffer(int start, int end, char* buffer, uint32_t converted_htonl) {
     uint8_t to_be_written = 0;
