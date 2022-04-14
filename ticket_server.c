@@ -281,7 +281,8 @@ void test_optional_initial_correct(char* arg_opt, char mode) {
 
 	if (!is_number(arg_opt)) {
 		fprintf(stderr,"%s should be passed as a numeric code\n", output);
-                exit(1);
+
+        exit(1);
 	}
 }
 
@@ -293,6 +294,7 @@ void test_optional_range(int* value, char mode) {
     if (*value < min_range || *value > max_range) {
         fprintf(stderr,"%s should be included in "
                "range [%d, %d]\n", output, max_range, min_range);
+
         exit(1);
     }
 }
@@ -302,11 +304,9 @@ char* read_options(int argc, char* argv[], int* port_number, int* timeout) {
 	char* filename = NULL;
 
 	while ((option = getopt(argc, argv, OPTSTRING)) != -1) {
-//		printf("READ: |%d|\n", option);
 		switch (option) {
 		case FILE_OPT:
             test_whether_arg_is_passed(optarg, FILE_ARG);
-//            printf("After: %s\n", optarg);
 			filename = optarg;
 
 			break;
@@ -330,37 +330,30 @@ char* read_options(int argc, char* argv[], int* port_number, int* timeout) {
 			fprintf(stderr, "Unrecognized argument or no parameter passed"
 				"\nUsage: ./test_service -f filename\n"
                 "Optional: -p port_number -t timeout\n");
+
 			exit(1);
 		}
 	}
-//    printf("after all %s\n", argv[optind]);
+
     if (argv[optind]) {
         fprintf(stderr, "Incorrect flag option"
                         "\nUsage: ./test_service -f filename\n"
                         "Optional: -p port_number -t timeout\n");
+
         exit(1);
     }
 
 	return filename;
 }
+
 Event create_event(char* description, int num_tickets, int read_length) {
     Event single_event;
 
     single_event.description = malloc(read_length + 1);
     single_event.description = strcpy(single_event.description, description);
 
-//    single_event.text_length = read_length;
-
-    single_event.available_tickets = 0;
+    single_event.available_tickets = 0;  //uin16_t
     single_event.available_tickets |= num_tickets;
-
-//    single_event.description_octets = 0;
-//    single_event.description_octets |= ROUNDUP_8(read_length);
-//    if ((read_length >> 8) == 0) {
-//        single_event.description_octets = 1;
-//    } else {
-//        single_event.description_octets = 2;
-//    }
     single_event.description_octets = read_length;
 
     return single_event;
@@ -380,45 +373,36 @@ void print_events(Event_array e) {
 void delete_event_array(Event* arr, size_t len) {
     for (size_t i = 0; i < len; i++) {
         free(arr[i].description);
-//        arr[i].description = NULL;
     }
 
     free(arr);
 }
 
 Event_array read_process_save_file_content(char* path) {
-    printf("entered\n");
     FILE* opened = fopen(path, "r");
     if (!opened) {
         perror(path);
 
         exit(1);
     }
-    printf("opened\n");
+
     char read_descr[DESC_LEN + 2];
     char read_ticket_num[TICK_LEN + 2];
 
     size_t max_index = 1;
     Event_array read_events;
     read_events.arr = malloc(sizeof(Event)*max_index);
-    check_err_perror((read_events.arr != NULL), "Allocating memory for file content\n");
+    check_err_perror((read_events.arr != NULL), "Allocating memory for events\n");
 
     Event* temp = NULL;
-    printf("malloced\n");
     size_t index = 0;
     char* ret;
-    uint64_t counter = 0;
-    printf("index: %lu\n", counter);
+
     while(fgets(read_descr, DESC_LEN + 2, opened)) {  //2 instead of 1
-//        printf("%lu READ: %d\n", counter, read_descr[0]);
-        counter++;
         ret = fgets(read_ticket_num, TICK_LEN + 2, opened); //2 instead of 1
-//        printf("%lu INT READ: %d\n", counter, atoi(read_ticket_num));
-        counter++;
-//        printf("Two %lu\n", counter);
+
         if (!ret) {
-            printf("NULL NUMBER %lu\n", counter);
-            printf("Error while reading file\n");
+            fprintf(stderr, "Error while reading file\n");
 
             exit(1);
         }
@@ -427,14 +411,14 @@ Event_array read_process_save_file_content(char* path) {
         if (read_descr[length - 1] == '\n') read_descr[--length] = '\0';
 
         Event single_event = create_event(read_descr, atoi(read_ticket_num),
-                                          length); //TODO length
+                                          length);
         read_events.arr[index++] = single_event;
 
         if (index >= max_index) {
             max_index *= 2;
             temp = realloc(read_events.arr, max_index* sizeof(Event));
             if (!temp) {
-                printf("Internal allocation memory error\n");
+                fprintf(stderr, "Internal allocation memory error\n");
                 delete_event_array(read_events.arr, index);
 
                 exit(1);
@@ -452,10 +436,12 @@ Event_array read_process_save_file_content(char* path) {
 }
 
 
-
+/*
+ * Code from lab examples with different error checking function:
+ * check_err_perror(...)
+ */
 int bind_socket(uint16_t port) {
     int socket_fd = socket(AF_INET, SOCK_DGRAM, 0); // creating IPv4 UDP socket
-//    ENSURE(socket_fd > 0);
     // after socket() call; we should close(sock) on any execution path;
     check_err_perror((socket_fd >= 0), "Determining socket file descriptor");
 
@@ -476,16 +462,16 @@ size_t read_message(int socket_fd, struct sockaddr_in *client_address,
                     char *buffer, size_t max_length) {
     socklen_t address_length = (socklen_t) sizeof(*client_address);
     int flags = 0; // we do not request anything special
-//    errno = 0;
     ssize_t len = recvfrom(socket_fd, buffer, max_length, flags,
                            (struct sockaddr *) client_address, &address_length);
-//    if (len < 0) {
-//        PRINT_ERRNO();
-//    }
     check_err_perror((len >= 0), "Receiving a message from a client");
 
     return (size_t) len;
 }
+
+/*
+ * End of code from lab
+ */
 
 Client_message create_client_message(uint8_t message_id, uint32_t event_id,
                                      uint16_t ticket_count,
@@ -534,23 +520,21 @@ Reservation_array create_res_array() {
 void insert_new_reservation(Reservation_array* reservations, uint16_t ticket_count,
                             uint64_t* ticket_ids, time_t expiration, char* cookie,
                             uint32_t event_id) {
-//    printf("enter insert\n");
     size_t* num_available_slots = &(reservations->num_available_slots);
     if (reservations->last_index >= *num_available_slots) {
         *num_available_slots = (*num_available_slots)*2 + 1;
         size_t new_size = (*num_available_slots)*sizeof(Reservation);
         Reservation* new_array = realloc(reservations->arr, new_size);
-        check_err_perror((new_array != NULL), "Error in extending reservations array");
+        check_err_perror((new_array != NULL), "Error in extending"
+                          " reservations array");
 
         reservations->arr = new_array;
-//        reservations->size = new_size;
     }
 
     Reservation new_reservation = create_reservation(ticket_count, ticket_ids,
                                                      expiration, cookie,
                                                      event_id);
     reservations->arr[(reservations->last_index)++] = new_reservation;
-//    printf("leave insert\n");
 }
 
 char* generate_cookie() {
@@ -575,8 +559,6 @@ void print_cookies(char* cookies) {
 void print_client_message(Client_message clm) {
     printf("mess : %d | event: %d | tick_count: %d | res: %d | cookie: "
            , clm.message_id, clm.event_id, clm.ticket_count, clm.reservation_id);
-//           clm.cookie);
-//    if (if_cookies) print_cookies(clm.cookie);
 }
 
 uint32_t bitshift_to_retrieve_message(int begining, int end, char* message) {
