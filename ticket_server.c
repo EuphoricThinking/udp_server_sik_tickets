@@ -358,17 +358,6 @@ Event create_event(char* description, int num_tickets, int read_length) {
     return single_event;
 }
 
-void print_single_event(Event e) {
-    printf("desc:\n%s\noctets: %d\ntickets: %d\n\n",
-           e.description, e.description_octets, e.available_tickets);
-}
-
-void print_events(Event_array e) {
-    for (size_t i = 0; i < e.len; i++) {
-        print_single_event(e.arr[i]);
-    }
-}
-
 void delete_event_array(Event* arr, size_t len) {
     for (size_t i = 0; i < len; i++) {
         free(arr[i].description);
@@ -547,18 +536,6 @@ char* generate_cookie() {
     return sweet_cookie;
 }
 
-void print_cookies(char* cookies) {
-    for (int i = 0; i < COOKIE_OCT; i++) {
-        printf("%c", cookies[i]);
-    }
-
-    printf("\n");
-}
-
-void print_client_message(Client_message clm) {
-    printf("mess : %d | event: %d | tick_count: %d | res: %d | cookie: "
-           , clm.message_id, clm.event_id, clm.ticket_count, clm.reservation_id);
-}
 
 /*
  * Code example from lab
@@ -644,13 +621,6 @@ void resolve_a_single_ticket(uint8_t storage[], uint64_t single_ticket) {
             storage[index--] = single_ticket;
         }
     }
-}
-
-void print_single_ticket(uint8_t ticket[]) {
-    for (int i = 0; i < TICKET_OCT; i++) {
-        printf("|%c%d|", ticket[i], ticket[i]);
-    }
-    printf("\n");
 }
 
 /*
