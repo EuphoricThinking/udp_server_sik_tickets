@@ -90,8 +90,6 @@ typedef struct Event_array {
 } Event_array;
 
 /*
- * A struct storing information about a single reservation
- *
  * once returned:       A flag for recognition whether the tickets reserved for
  *                      an expired reservation have been returned to available
  *                      tickets.
@@ -109,12 +107,22 @@ typedef struct Reservation {
     uint32_t event_id;
 } Reservation;
 
+/*
+ * last_index:          The last index which isn't occupied by a reservation.
+ *
+ * num_available_slots: The number of indexes which can be stored in allocated
+ *                      memory, used for memory management.
+ */
 typedef struct Reservation_array {
     Reservation* arr;
     size_t last_index;
     size_t num_available_slots;
 } Reservation_array;
 
+/*
+ * Cookies are used during initial validation, after which they are not needed
+ * in further proceedings.
+ */
 typedef struct Client_message {
     uint8_t message_id;
     uint32_t event_id;
@@ -124,7 +132,13 @@ typedef struct Client_message {
 
 
 /*
- * Queue
+ * An implementation of the queue, used for efficient cancellation of
+ * the expired messages. In case of the receipt of a new reservation,
+ * the old reservations, which have been neither requested for nor cancelled
+ * automatically, would account for tickets which should be available
+ * but instead are locked. The queue enables quick removal of the expired
+ * reservations; it stores the indexes of the reservations in ascending order
+ * of expiration time.
  */
 
 typedef struct List {
@@ -226,7 +240,7 @@ bool is_empty(Queue* q) {
 
 
 /*
- * End of queue
+ * End of queue, would love to store it in a header
  */
 
 void check_err_perror(bool statement, const char* mess) {
