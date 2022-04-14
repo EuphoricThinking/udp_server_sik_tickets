@@ -67,6 +67,7 @@
 #define COOKIE_ASCII_MAX    126
 
 // Internal error codes
+#define ERR_INIT        0
 #define ERR_EVENTS_TICK 1
 #define ERR_RES         2
 
@@ -837,9 +838,7 @@ void handle_client_message(Client_message from_client, char* message,
     }
 
     if (!to_be_ignored) {
-//        printf("SENDING\n");
-        send_message(socket_fd, client_address, message,
-                     length_to_send);
+        send_message(socket_fd, client_address, message,length_to_send);
     }
 }
 
@@ -855,15 +854,19 @@ bool are_cookies_identical(char* original_cookie, char* received_cookie) {
 
 Client_message interpret_client_message(char* message, size_t received_length,
                                         Event_array* events, Queue* expiring,
-                                        const Reservation_array* reservs) { //TODO check if reservation has been made
-    Client_message result_message = create_client_message(ERR_MESS_ID, 0, 0, 0);
+                                        const Reservation_array* reservs) {
+    /*
+     * Default error interpretation indicating the incorrect message.
+     * Since event_id and reservation_id are used as data to be sent
+     * to the client, an appropriate flag value is set at ticket_count field
+     */
+    Client_message result_message = create_client_message(ERR_MESS_ID, 0, ERR_INIT, 0);
     if (received_length == 0) return result_message;
 
     uint8_t message_id = message[0];
-//    printf("ntohl: %d\n", message_id_ntohl);
     if (message_id != GET_EVENTS && message_id != GET_RESERVATION
         && message_id != GET_TICKETS) return result_message;
-//    printf("nopassed\n");
+
     char* current_pointer = message;
     current_pointer++;
 
@@ -871,28 +874,18 @@ Client_message interpret_client_message(char* message, size_t received_length,
         case GET_EVENTS:
             if (received_length > 1) return result_message;
 
-//            result_message.message_id |= message_id_ntohl;
             result_message.message_id = message_id;
 
             return result_message;
 
         case GET_RESERVATION:
-//            printf("received length: %ld\n", received_length);
             if (received_length != (MESS_ID_OCT + EVENT_ID_OCT + TICK_COU_OCT))
                 return result_message;
 
-//            uint32_t event_id = ntohl(bitshift_to_retrieve_message(1,
-//                                                             EVENT_ID_OCT + 1,
-//                                                             message));
-//            uint32_t event_id = ntohl(*(uint32_t*)(message + 1));
             uint32_t event_id = ntohl(*(uint32_t*)current_pointer);
             current_pointer += 4;
 
             result_message.event_id = event_id;
-
-//            char* ptr = message + 1;
-//            uint32_t converted = *(uint32_t*)ptr;
-//            printf("CONVERTED %d\n", converted);
 
             if (event_id > (events->len - 1)) {
                 result_message.ticket_count = ERR_EVENTS_TICK;
@@ -900,19 +893,10 @@ Client_message interpret_client_message(char* message, size_t received_length,
                 return result_message;
             }
 
-//            uint16_t tickets_count = 0;
-//            int ticket_begin = 1 + EVENT_ID_OCT;
-//            tickets_count = ntohs(tickets_count |= bitshift_to_retrieve_message(ticket_begin,
-//                                                    ticket_begin + TICK_COU_OCT,
-//                                                    message));
             uint16_t tickets_count = ntohs(*(uint16_t*)current_pointer);
             current_pointer += 2;
 
-//            printf("TICKETS %d\n", tickets_count);
-            printf("Before expired: %d\n", expiring->num_elements);
             free_expired(events, expiring, reservs);
-            printf("after expired: %d\n", expiring->num_elements);
-//            printf("AVAL TICK %d\n", events->arr[event_id].available_tickets);
             if (tickets_count == 0 || events->arr[event_id].available_tickets
                 < tickets_count || UDP_MAX < (TICKET_OCT*tickets_count +
                 MESS_ID_OCT + RES_ID_OCT + TICK_COU_OCT)) {
@@ -920,29 +904,26 @@ Client_message interpret_client_message(char* message, size_t received_length,
 
                     return result_message;
             }
-//            printf("AFTER AVAL TICK %d\n", events->arr[event_id].available_tickets);
 
-//            result_message.message_id |= message_id_ntohl;
             result_message.message_id = message_id;
-//            result_message.ticket_count |= tickets_count;
             result_message.ticket_count = tickets_count;
 
             return result_message;
 
-        case GET_TICKETS: //TODO error checking
+        case GET_TICKETS:
             if (received_length != (MESS_ID_OCT + RES_ID_OCT + COOKIE_OCT))
                 return result_message;
 
-//            uint32_t reservation_id = ntohl(bitshift_to_retrieve_message(
-//                    1, 1 + RES_ID_OCT, message));
-//            uint32_t reservation_id = ntohl(*(uint32_t*)(message + 1));
             uint32_t reservation_id = ntohl(*(uint32_t*)current_pointer);
             current_pointer += 4;
             result_message.reservation_id = reservation_id;
             reservation_id -= RES_IND_BIAS;
 
+            /*
+             * reservs->last_index indicates the last index not occupied
+             * by a struct, therefore it points at the uninitialized memory
+             */
             if (reservation_id >= reservs->last_index) {
-//                printf("WRONG INDEX:\n");
                 result_message.ticket_count = ERR_RES;
 
                 return result_message;
