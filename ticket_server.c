@@ -748,18 +748,13 @@ void handle_client_message(Client_message from_client, char* message,
                                    NULL, expiration_time, cookie,
                                    from_client.event_id);
 
-
-//            requested_reservation = &(reservs->arr[requested_index]);
-
             Event* requested_event = &(events->arr[from_client.event_id]);
             requested_event->available_tickets -= from_client.ticket_count;
 
             to_be_ignored = true;
 
-
-//            requested_reservation->expiration = expiration_time;
-            size_t requested_index = (reservs->last_index) - 1;
-            push(expiring, requested_index);
+            size_t reservation_index = (reservs->last_index) - 1;
+            push(expiring, reservation_index);
 
             break;
 
@@ -767,6 +762,10 @@ void handle_client_message(Client_message from_client, char* message,
             requested_reservation =
                     &(reservs->arr[from_client.reservation_id - RES_IND_BIAS]);
 
+            /*
+             * Tickets are generated only when it is confirmed that the reservation
+             * has not expired.
+             */
             if (!(requested_reservation->ticket_ids)) {
                 requested_reservation->ticket_ids =
                     malloc((requested_reservation->ticket_count)*sizeof(uint64_t));
@@ -779,30 +778,19 @@ void handle_client_message(Client_message from_client, char* message,
                 }
             }
 
-//            printf("tickets seed %lu\n", *ticket_seed);
-//            for (int i = 0; i < requested_reservation->ticket_count; i++) {
-//                printf("%d t %lu\n", i, requested_reservation->ticket_ids[i]);
-//            }
-
             current_pointer[0] = TICKETS;
             current_pointer++;
 
-            *(uint32_t*)current_pointer = htonl(from_client.reservation_id); //+ RES_IND_BIAS);
+            *(uint32_t*)current_pointer = htonl(from_client.reservation_id);
             current_pointer += 4;
 
             uint16_t ticket_count = requested_reservation->ticket_count;
             *(uint16_t*)current_pointer = htons(ticket_count);
             current_pointer += 2;
-//            char* to_check = current_pointer;
 
             fill_buffer_with_tickets(ticket_count,
                                      requested_reservation->ticket_ids,
                                      current_pointer);
-
-//            for (int i = 0; i < TICKET_OCT*ticket_count; i++) {
-//                printf("%c", to_check[i]);
-//            }
-//            printf("\n");
 
             length_to_send = MESS_ID_OCT + RES_ID_OCT + TICK_COU_OCT
                             + TICKET_OCT*ticket_count;
@@ -816,10 +804,8 @@ void handle_client_message(Client_message from_client, char* message,
             int one_event_block_to_send;
             int desc_length;
 
-//            printf("before mess %d curr %d\n", message[0], current_pointer[0]);
             current_pointer[0] = EVENTS;
             current_pointer++;
-//            printf("after mess %d curr %d\n", message[0], current_pointer[0]);
 
             for (uint32_t i = 0; i < events->len; i++) {
                 current_event = events->arr[i];
@@ -832,7 +818,6 @@ void handle_client_message(Client_message from_client, char* message,
                 else {
                     *(uint32_t*)current_pointer = htonl(i);
                     current_pointer += 4;
-//                    printf("inside mess %d curr %d\n", message[0], current_pointer[0]);
 
                     *(uint16_t*)current_pointer = htons(current_event.available_tickets);
                     current_pointer += 2;
@@ -850,13 +835,6 @@ void handle_client_message(Client_message from_client, char* message,
 
             length_to_send = UDP_MAX - left_space;
     }
-
-//    printf("TO SEND\nmess_id %d\nlength %ld\nignore %d\n", message[0], length_to_send, to_be_ignored);
-//    printf("messid %d resid %d tick %hu\n", message[0], ntohl(*(uint32_t*)(message + 1)), ntohs(*(uint16_t*)(message + 5)));
-//    for (size_t i = 8; i < length_to_send; i++) {
-//        printf("%c", message[i]);
-//    }
-//    printf("\n");
 
     if (!to_be_ignored) {
 //        printf("SENDING\n");
@@ -931,9 +909,9 @@ Client_message interpret_client_message(char* message, size_t received_length,
             current_pointer += 2;
 
 //            printf("TICKETS %d\n", tickets_count);
-//            printf("Before expired: %d\n", expiring->num_elements);
+            printf("Before expired: %d\n", expiring->num_elements);
             free_expired(events, expiring, reservs);
-//            printf("after expired: %d\n", expiring->num_elements);
+            printf("after expired: %d\n", expiring->num_elements);
 //            printf("AVAL TICK %d\n", events->arr[event_id].available_tickets);
             if (tickets_count == 0 || events->arr[event_id].available_tickets
                 < tickets_count || UDP_MAX < (TICKET_OCT*tickets_count +
