@@ -1,4 +1,3 @@
-//#define _BSD_SOURCE
 #define _DEFAULT_SOURCE
 #include <endian.h>
 
@@ -34,13 +33,13 @@
 #define PORT_OPT 'p'
 #define FILE_OPT 'f'
 
-#define ROUNDUP_8(x)    (((x) + 255) >> 8)
-
+// Input file limits
 #define DESC_LEN 80
 #define TICK_LEN 5
 
 #define UDP_MAX  65507
 
+// Codes of the particular messages
 #define GET_EVENTS      1
 #define GET_RESERVATION 3
 #define GET_TICKETS     5
@@ -51,6 +50,7 @@
 #define BAD_REQUEST     255
 #define ERR_MESS_ID     0
 
+// Number of octets per particular type of message
 #define MESS_ID_OCT     1
 #define DESC_LEN_OCT    1
 #define TICK_COU_OCT    2
@@ -66,18 +66,20 @@
 #define COOKIE_ASCII_MIN    33
 #define COOKIE_ASCII_MAX    126
 
+// Internal error codes
 #define ERR_EVENTS_TICK 1
 #define ERR_RES         2
 
+// Bias used in conversion from reservation id to index in array (and reversely)
 #define RES_IND_BIAS    1000000
 
+// Values used in 36-base numeric system, created for unique tickets encoding
 #define DIGIT_ASCII_START   (uint8_t)48
 #define LETTER_ASCII_START  (uint8_t)55 //subtracted bias
 #define BASE_TICK_CONVERT   36
 
 typedef struct Event {
     char* description;
-//    uint8_t text_length;
     uint8_t description_octets;
     uint16_t available_tickets;
 } Event;
@@ -87,6 +89,16 @@ typedef struct Event_array {
     size_t len;
 } Event_array;
 
+/*
+ * A struct storing information about a single reservation
+ *
+ * once returned:       A flag for recognition whether the tickets reserved for
+ *                      an expired reservation have been returned to available
+ *                      tickets.
+ *
+ * has_been_completed:  Indicates whether the requested reservation has been
+ *                      consumed on time once before.
+ */
 typedef struct Reservation {
     uint16_t ticket_count;
     uint64_t* ticket_ids;
@@ -361,13 +373,6 @@ void delete_event_array(Event* arr, size_t len) {
 }
 
 Event_array read_process_save_file_content(char* path) {
-//    struct stat buffer;
-//    if (!stat(path, &buffer)) {
-//        perror("Error with opening the file");
-//
-//        exit(1);
-//    }
-//    printf("ROUNDUP %d\n", ROUNDUP_8(65535));
     printf("entered\n");
     FILE* opened = fopen(path, "r");
     if (!opened) {
