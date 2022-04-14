@@ -992,22 +992,11 @@ int main(int argc, char* argv[]) {
         if (message_buffer[0] == GET_RESERVATION) {
             expiration = time(NULL) + timeout;
         }
-//        char* client_ip = inet_ntoa(client_address.sin_addr);
-//        uint16_t client_port = ntohs(client_address.sin_port);
-
-//        message_buffer[read_length] = '\0';
-
-//        printf("received %zd bytes from client %s:%u: '%.*s' |%c|\n",
-//               read_length, client_ip, client_port,
-//               (int) read_length, message_buffer, message_buffer[1 + RES_ID_OCT]); // note: we specify the length of the printed string
-
         Client_message received_message = interpret_client_message(message_buffer,
                                                                    read_length,
                                                                    &read_events,
                                                                    reservation_expiring,
                                                                    &reservations);
-//        print_client_message(received_message);
-//        printf("\n");
 
         handle_client_message(received_message, message_buffer, socket_fd,
                               &client_address, &reservations, expiration,
