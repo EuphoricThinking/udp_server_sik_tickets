@@ -681,7 +681,7 @@ void fill_buffer_with_tickets(uint16_t ticket_count, uint64_t* tickets,
 void handle_client_message(Client_message from_client, char* message,
                            int socket_fd,
                            const struct sockaddr_in *client_address,
-                           Reservation_array* reservs, time_t timeout,
+                           Reservation_array* reservs, time_t expiration_time,
                            uint64_t* ticket_seed, Event_array* events,
                            Queue* expiring) {
     size_t length_to_send = 0;
@@ -738,6 +738,23 @@ void handle_client_message(Client_message from_client, char* message,
             current_pointer[0] = RESERVATION;
             current_pointer++;
 
+            *(uint32_t*)current_pointer = htonl(reservs->last_index + RES_IND_BIAS);
+            current_pointer += 4;
+
+            *(uint32_t*)current_pointer = htonl(from_client.event_id);
+            current_pointer += 4;
+
+            *(uint16_t*)current_pointer = htons(from_client.ticket_count);
+            current_pointer += 2;
+
+            overwrite_buffer(cookie, current_pointer, COOKIE_OCT);
+            current_pointer += COOKIE_OCT;
+
+//            time_t expiration_time = time(NULL) + timeout;
+            *(uint64_t*)current_pointer = htobe64((uint64_t)expiration_time);
+
+            send_message(socket_fd, client_address, message, length_to_send);
+
             insert_new_reservation(reservs, from_client.ticket_count,
                                    NULL, 0, cookie,
                                    from_client.event_id);
@@ -750,22 +767,6 @@ void handle_client_message(Client_message from_client, char* message,
 
             to_be_ignored = true;
 
-            *(uint32_t*)current_pointer = htonl(requested_index + RES_IND_BIAS);
-            current_pointer += 4;
-
-            *(uint32_t*)current_pointer = htonl(from_client.event_id);
-            current_pointer += 4;
-
-            *(uint16_t*)current_pointer = htons(from_client.ticket_count);
-            current_pointer += 2;
-
-            overwrite_buffer(cookie, current_pointer, COOKIE_OCT);
-            current_pointer += COOKIE_OCT;
-
-            time_t expiration_time = time(NULL) + timeout;
-            *(uint64_t*)current_pointer = htobe64((uint64_t)expiration_time);
-
-            send_message(socket_fd, client_address, message, length_to_send);
 
             requested_reservation->expiration = expiration_time;
             push(expiring, requested_index);
@@ -1060,10 +1061,14 @@ int main(int argc, char* argv[]) {
     Reservation_array reservations = create_res_array();
     srand(time(NULL));
     uint64_t ticket_seed = 0;
+    time_t expiration = 0;
 
     do {
         read_length = read_message(socket_fd, &client_address,
                                    message_buffer, sizeof(message_buffer));
+        if (message_buffer[0] == GET_RESERVATION) {
+            expiration = time(NULL) + timeout;
+        }
 //        char* client_ip = inet_ntoa(client_address.sin_addr);
 //        uint16_t client_port = ntohs(client_address.sin_port);
 
@@ -1082,7 +1087,7 @@ int main(int argc, char* argv[]) {
 //        printf("\n");
 
         handle_client_message(received_message, message_buffer, socket_fd,
-                              &client_address, &reservations, (time_t)timeout,
+                              &client_address, &reservations, expiration,
                               &ticket_seed, &read_events, reservation_expiring);
 
     } while (true); //(read_length > 0);
