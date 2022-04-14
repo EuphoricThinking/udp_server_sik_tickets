@@ -63,7 +63,7 @@ def start_server_with_params(params, server_kill_timeout=5000):
         server = subprocess.Popen(args,
             stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 
-    start_time = current_time_ms() 
+    start_time = current_time_ms()
     while True:
         if is_port_in_use(port):
             return server
