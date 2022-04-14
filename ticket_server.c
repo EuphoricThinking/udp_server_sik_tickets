@@ -217,7 +217,13 @@ bool is_empty(Queue* q) {
  * End of queue
  */
 
+void check_err_perror(bool statement, const char* mess) {
+    if (!statement) {
+        perror(mess);
 
+        exit(1);
+    }
+}
 
 
 bool is_number(char* arg_opt) {
@@ -362,26 +368,37 @@ Event_array read_process_save_file_content(char* path) {
 //        exit(1);
 //    }
 //    printf("ROUNDUP %d\n", ROUNDUP_8(65535));
+    printf("entered\n");
     FILE* opened = fopen(path, "r");
     if (!opened) {
         perror(path);
 
         exit(1);
     }
-
+    printf("opened\n");
     char read_descr[DESC_LEN + 2];
     char read_ticket_num[TICK_LEN + 2];
 
     size_t max_index = 1;
     Event_array read_events;
     read_events.arr = malloc(sizeof(Event)*max_index);
-    Event* temp = NULL;
+    check_err_perror((read_events.arr != NULL), "Allocating memory for file content\n");
 
+    Event* temp = NULL;
+    printf("malloced\n");
     size_t index = 0;
     char* ret;
-    while(fgets(read_descr, DESC_LEN + 1, opened)) {
-        ret = fgets(read_ticket_num, TICK_LEN + 1, opened);
+    uint64_t counter = 0;
+    printf("index: %lu\n", counter);
+    while(fgets(read_descr, DESC_LEN + 2, opened)) {  //2 instead of 1
+//        printf("%lu READ: %d\n", counter, read_descr[0]);
+        counter++;
+        ret = fgets(read_ticket_num, TICK_LEN + 2, opened); //2 instead of 1
+//        printf("%lu INT READ: %d\n", counter, atoi(read_ticket_num));
+        counter++;
+//        printf("Two %lu\n", counter);
         if (!ret) {
+            printf("NULL NUMBER %lu\n", counter);
             printf("Error while reading file\n");
 
             exit(1);
@@ -415,13 +432,7 @@ Event_array read_process_save_file_content(char* path) {
     return read_events;
 }
 
-void check_err_perror(bool statement, const char* mess) {
-    if (!statement) {
-        perror(mess);
 
-        exit(1);
-    }
-}
 
 int bind_socket(uint16_t port) {
     int socket_fd = socket(AF_INET, SOCK_DGRAM, 0); // creating IPv4 UDP socket
@@ -1025,10 +1036,11 @@ int main(int argc, char* argv[]) {
 
 	int timeout = TIME_DEF;
 	int port = PORT_DEF;
-
+	printf("Entered\n");
 	char* filename = read_options(argc, argv, &port, &timeout);
-//	printf("FILENAME %s\n", filename);
+	printf("FILENAME %s\n", filename);
     Event_array read_events = read_process_save_file_content(filename);
+    printf("HERE\n");
 //    print_events(read_events);
 
 //    printf("Listening on port %d\n", port);
@@ -1081,3 +1093,4 @@ int main(int argc, char* argv[]) {
 
 	return 0;
 }
+
