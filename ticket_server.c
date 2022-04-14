@@ -292,7 +292,7 @@ void test_optional_range(int* value, char mode) {
 
     if (*value < min_range || *value > max_range) {
         fprintf(stderr,"%s should be included in "
-               "range [%d, %d]\n", output, max_range, min_range);
+               "range [%d, %d]\n", output, min_range, max_range);
 
         exit(1);
     }
@@ -945,6 +945,7 @@ int main(int argc, char* argv[]) {
 
     uint16_t port_converted = 0;
     port_converted |= port;
+    printf("Listening on port %u\n", port);
 
     int socket_fd = bind_socket(port_converted);
     struct sockaddr_in client_address;
