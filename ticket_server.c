@@ -698,7 +698,6 @@ void handle_client_message(Client_message from_client, char* message,
         case ERR_MESS_ID:
             if (from_client.ticket_count == ERR_EVENTS_TICK) {
                 length_to_send = MESS_ID_OCT + EVENT_ID_OCT;
-                printf("EVENTS_TICK\n");
 
                 current_pointer[0] = BAD_REQUEST;
                 current_pointer++;
@@ -948,52 +947,28 @@ Client_message interpret_client_message(char* message, size_t received_length,
                     return result_message;
             }
 
-//            message[received_length] = '\0';
-//            char* cookie = message + (1 + RES_ID_OCT); //does it work?
-
             result_message.message_id = message_id;
-//            result_message.reservation_id = reservation_id;
-//            result_message.cookie = cookie;
-//            result_message.cookie = message;
             if (!requested_reservation->has_been_completed)
                 requested_reservation->has_been_completed = true;
 
             return result_message;
     }
 
-    return result_message;
+    return result_message; // For compiler's complaints
 }
 
-void print_to_send(char* buffer) {
-    uint8_t mess_id = *buffer;
-    char* current_pointer = buffer;
-    current_pointer++;
-
-    printf("TO SEND:\nmess_id: %d\n", mess_id);
-    switch (mess_id) {
-        case BAD_REQUEST:
-            printf("EV/RES ERR %d\n", *(uint32_t*)current_pointer);
-
-            break;
-    }
-}
 int main(int argc, char* argv[]) {
 	if (argc == 1) {
 		fprintf(stderr, "Required arguments: -f filename\n"
                "Optional: -p port_number -t timeout\n");
+
 		exit(1);
 	}
 
 	int timeout = TIME_DEF;
 	int port = PORT_DEF;
-	printf("Entered\n");
 	char* filename = read_options(argc, argv, &port, &timeout);
-	printf("FILENAME %s\n", filename);
     Event_array read_events = read_process_save_file_content(filename);
-    printf("HERE\n");
-//    print_events(read_events);
-
-//    printf("Listening on port %d\n", port);
 
     char message_buffer[UDP_MAX + 1];
     memset(message_buffer, 0, sizeof(message_buffer));
@@ -1005,7 +980,6 @@ int main(int argc, char* argv[]) {
 
     int socket_fd = bind_socket(port_converted);
     struct sockaddr_in client_address;
-//    printf("BYTE ORDER%d\n'", __BYTE_ORDER == __LITTLE_ENDIAN);
     Queue* reservation_expiring = init_queue();
     Reservation_array reservations = create_res_array();
     srand(time(NULL));
