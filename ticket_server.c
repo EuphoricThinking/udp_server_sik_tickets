@@ -654,32 +654,42 @@ void print_single_ticket(uint8_t ticket[]) {
     printf("\n");
 }
 
+/*
+ * Characters encoded in a number are evaluated to the temporary array,
+ * subsequently used as a pattern for overwriting the buffer.
+ */
 void fill_buffer_with_tickets(uint16_t ticket_count, uint64_t* tickets,
                               char* buffer) {
     uint8_t single_ticket[TICKET_OCT];
     char* current_pointer = buffer;
     for (uint16_t i = 0; i < ticket_count; i++) {
         resolve_a_single_ticket(single_ticket, tickets[i]);
-//        print_single_ticket(single_ticket);
         fill_buffer_with_a_single_ticket(current_pointer, single_ticket);
         current_pointer += TICKET_OCT;
     }
 }
 
 void handle_client_message(Client_message from_client, char* message,
-                           int socket_fd,
-                           const struct sockaddr_in *client_address,
+                           int socket_fd, const struct sockaddr_in *client_address,
                            Reservation_array* reservs, time_t expiration_time,
                            uint64_t* ticket_seed, Event_array* events,
                            Queue* expiring) {
     size_t length_to_send = 0;
 
+    /*
+     * Messages are sent at the end of the function, except a few situations:
+     * - RESERVATION:   In order to shorten the time between determining
+     *                  the expiration time and sending the information
+     *                  to the client, the message is sent in an appropriate
+     *                  switch-case branch.
+     *
+     * - INITIAL_ERROR: The messages of incorrect length or message_id are ignored.
+     */
     bool to_be_ignored = false;
     char* cookie;
     Reservation* requested_reservation;
     int left_space;
 
-//    printf("ID: %d ERR: %d \n", from_client.message_id, ERR_MESS_ID);
     uint8_t message_id = from_client.message_id;
     char* current_pointer = message;
 
@@ -694,12 +704,8 @@ void handle_client_message(Client_message from_client, char* message,
 
                 uint32_t event_id_to_send = htonl(from_client.event_id);
                 *(uint32_t*)current_pointer = event_id_to_send;
-//                fill_buffer(1, 1 + EVENT_ID_OCT, message, event_id_to_send);
-//                *(uint32_t*)(message + 1) = event_id_to_send; //TODO does it work
-                //send_message(socket_fd, client_address, message, length_to_send);
             }
             else if (from_client.ticket_count == ERR_RES) {
-//                printf("RESE_ERR TICk %d ERR_res %d \n", from_client.ticket_count, ERR_RES);
                 length_to_send = MESS_ID_OCT + RES_ID_OCT;
 
                 current_pointer[0] = BAD_REQUEST;
@@ -707,16 +713,12 @@ void handle_client_message(Client_message from_client, char* message,
 
                 uint32_t reservation_id_to_send = htonl(from_client.reservation_id);
                 *(uint32_t*)current_pointer = reservation_id_to_send;
-//                fill_buffer(1, 1 + RES_ID_OCT, message, reservation_id_to_send);
-//                *(uint32_t*)(message + 1) = reservation_id_to_send;
-
-                //send_message(socket_fd, client_address, message, length_to_send);
             }
             else {
-                to_be_ignored = true;
+                to_be_ignored = true; //Initial errors are skipped
             }
 
-            break; //incorrect length etc. - simply skip
+            break;
 
         case GET_RESERVATION:
             cookie = generate_cookie();
@@ -738,17 +740,16 @@ void handle_client_message(Client_message from_client, char* message,
             overwrite_buffer(cookie, current_pointer, COOKIE_OCT);
             current_pointer += COOKIE_OCT;
 
-//            time_t expiration_time = time(NULL) + timeout;
             *(uint64_t*)current_pointer = htobe64((uint64_t)expiration_time);
 
             send_message(socket_fd, client_address, message, length_to_send);
 
             insert_new_reservation(reservs, from_client.ticket_count,
-                                   NULL, 0, cookie,
+                                   NULL, expiration_time, cookie,
                                    from_client.event_id);
 
-            size_t requested_index = (reservs->last_index) - 1;
-            requested_reservation = &(reservs->arr[requested_index]);
+
+//            requested_reservation = &(reservs->arr[requested_index]);
 
             Event* requested_event = &(events->arr[from_client.event_id]);
             requested_event->available_tickets -= from_client.ticket_count;
@@ -756,7 +757,8 @@ void handle_client_message(Client_message from_client, char* message,
             to_be_ignored = true;
 
 
-            requested_reservation->expiration = expiration_time;
+//            requested_reservation->expiration = expiration_time;
+            size_t requested_index = (reservs->last_index) - 1;
             push(expiring, requested_index);
 
             break;
