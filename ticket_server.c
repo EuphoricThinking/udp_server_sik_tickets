@@ -577,22 +577,16 @@ void send_message(int socket_fd, const struct sockaddr_in *client_address,
  * End of lab code
  */
 
-void fill_buffer(int start, int end, char* buffer, uint32_t converted_htonl) {
-    uint8_t to_be_written = 0;
-
-    for (int i = start; i < end; i++) {
-        to_be_written |= converted_htonl >> 8*(i - start);
-        buffer[i] = to_be_written;
-        to_be_written = 0;
-    }
-}
-
 void free_expired(Event_array* events, Queue* expiring, const Reservation_array *reservs) {
     time_t expiration;
     List* reservation;
     while (!is_empty(expiring)) {
         expiration = reservs->arr[top(expiring)->val].expiration;
 
+        /*
+         * Since reservations are stored in ascending order, the search stops
+         * at the first non-expired reservation.
+         */
         if (expiration >= time(NULL)) {
             break;
         }
@@ -600,7 +594,7 @@ void free_expired(Event_array* events, Queue* expiring, const Reservation_array 
             reservation = pop(expiring);
             Reservation cancelled = reservs->arr[reservation->val];
 
-            if (!cancelled.has_been_completed && !cancelled.once_returned) { //TODO      //TODO Added cancelled.once_returned
+            if (!cancelled.has_been_completed && !cancelled.once_returned) {
                 Event* event_to_add_tickets = &(events->arr[cancelled.event_id]);
                 event_to_add_tickets->available_tickets += cancelled.ticket_count;
             }
@@ -616,6 +610,15 @@ void overwrite_buffer(char* cookie, char* message, int limit) {
     }
 }
 
+/*
+ * In 36-base system, the signs available for ticket encoding are labeled
+ * using numbers 0-35. Evaluation of a character involves adding
+ * an appropriate bias to the value in a specific range: 48 (DIGIT_ASCII_START)
+ * is added to numbers from 0-9, representing digits, and 55 (LETTER_ASCII_START)
+ * is added to numbers greater than 10, since ASCII codes for capital letters
+ * start at 65 and value 10 serves as a bias reserved for digits in 36-base
+ * system.
+ */
 uint8_t determine_char(uint8_t byte) {
     if (byte < 10) {
         return byte + DIGIT_ASCII_START;
@@ -626,12 +629,9 @@ uint8_t determine_char(uint8_t byte) {
 }
 
 void fill_buffer_with_a_single_ticket(char* buffer, uint8_t ticket[]) {
-//    printf("single fragment buffer\n");
     for (int i = 0; i < TICKET_OCT; i++ ){
         buffer[i] = determine_char(ticket[i]);
-//        printf("%c", buffer[i]);
     }
-//    printf("\n");
 }
 
 void resolve_a_single_ticket(uint8_t storage[], uint64_t single_ticket) {
